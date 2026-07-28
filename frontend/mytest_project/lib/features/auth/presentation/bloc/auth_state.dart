@@ -1,26 +1,28 @@
-import 'package:mytest_project/features/auth/domain/entities/auth_user.dart';
-
 part of 'auth_bloc.dart';
 
-sealed class AuthState {
+abstract class AuthState {
   const AuthState();
 }
 
-final class AuthInitial extends AuthState {
+class AuthInitial extends AuthState {
   const AuthInitial();
 }
 
-final class AuthLoading extends AuthState {
+class AuthLoading extends AuthState {
   const AuthLoading();
 }
 
-final class AuthSuccess extends AuthState {
+class AuthAuthenticated extends AuthState {
   final AuthUser user;
 
-  const AuthSuccess(this.user);
+  const AuthAuthenticated(this.user);
 }
 
-final class AuthFailure extends AuthState {
+class AuthUnauthenticated extends AuthState {
+  const AuthUnauthenticated();
+}
+
+class AuthFailure extends AuthState {
   final String message;
 
   const AuthFailure(this.message);

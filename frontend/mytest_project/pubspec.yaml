@@ -38,6 +38,7 @@ dependencies:
   flutter_bloc: ^8.1.2
   http: ^1.6.0
   get_it: ^9.2.1
+  shared_preferences: ^2.5.5
 
   
 dev_dependencies:

@@ -31,26 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Login successful!'),
-              ),
-            );
-
-            // We will navigate to the home page here later.
-          }
-
-          if (state is AuthFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-              ),
-            );
-          }
-        },
+      body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           final isLoading = state is AuthLoading;
 
@@ -93,12 +74,11 @@ class _LoginPageState extends State<LoginPage> {
                         : () {
                             if (formKey.currentState!.validate()) {
                               context.read<AuthBloc>().add(
-                                    AuthLogIn(
-                                      email: emailController.text.trim(),
-                                      password:
-                                          passwordController.text.trim(),
-                                    ),
-                                  );
+                                AuthLogIn(
+                                  email: emailController.text.trim(),
+                                  password: passwordController.text.trim(),
+                                ),
+                              );
                             }
                           },
                   ),
@@ -112,16 +92,14 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const SignupPage(),
+                                builder: (context) => const SignupPage(),
                               ),
                             );
                           },
                     child: RichText(
                       text: TextSpan(
                         text: "Don't have an account?",
-                        style:
-                            Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium,
                         children: [
                           TextSpan(
                             text: ' Sign Up',
@@ -137,6 +115,17 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
+                  if (state is AuthFailure) ...[
+                    const SizedBox(height: 15),
+                    Text(
+                      state.message,
+                      style: const TextStyle(
+                        color: Colors.red,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ],
               ),
             ),

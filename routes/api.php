@@ -12,5 +12,7 @@ Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth:sanctum');
 
 Route::get('/user', function (Request $request) {
-    return $request->user();
+    return response()->json([
+        'user' => $request->user(),
+    ]);
 })->middleware('auth:sanctum');

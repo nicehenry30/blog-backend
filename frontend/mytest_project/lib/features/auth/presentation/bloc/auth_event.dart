@@ -1,6 +1,6 @@
 part of 'auth_bloc.dart';
 
-sealed class AuthEvent {
+abstract class AuthEvent {
   const AuthEvent();
 }
 
@@ -24,4 +24,11 @@ class AuthLogIn extends AuthEvent {
     required this.email,
     required this.password,
   });
+}
+
+class AuthLogOut extends AuthEvent {
+  const AuthLogOut();
+}
+class AuthCheckStatus extends AuthEvent {
+  const AuthCheckStatus();
 }

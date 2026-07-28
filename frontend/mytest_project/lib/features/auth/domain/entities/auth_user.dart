@@ -10,4 +10,16 @@ class AuthUser {
     required this.email,
     required this.token,
   });
+
+  factory AuthUser.fromJson(
+    Map<String, dynamic> json, {
+    required String token,
+  }) {
+    return AuthUser(
+      id: json['id'].toString(),
+      name: json['name'] as String,
+      email: json['email'] as String,
+      token: token,
+    );
+  }
 }

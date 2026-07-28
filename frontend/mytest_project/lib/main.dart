@@ -3,10 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mytest_project/core/di/injection_container.dart';
 import 'package:mytest_project/core/theme/theme.dart';
 import 'package:mytest_project/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:mytest_project/features/auth/presentation/pages/login_page.dart';
+import 'package:mytest_project/features/auth/presentation/pages/auth_gate.dart';
 
-void main() {
-  initDependencies();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await initDependencies();
+
   runApp(const MyApp());
 }
 
@@ -16,12 +19,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => serviceLocator<AuthBloc>(),
+      create: (_) => serviceLocator<AuthBloc>()
+        ..add(const AuthCheckStatus()),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Blog App',
         theme: AppTheme.darkThemeMode,
-        home: const LoginPage(),
+        home: const AuthGate(),
       ),
     );
   }
