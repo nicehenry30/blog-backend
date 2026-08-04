@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:fpdart/fpdart.dart';
 import 'package:mytest_project/core/error/exceptions.dart';
 import 'package:mytest_project/core/error/failures.dart';
@@ -30,14 +31,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await localStorage.saveToken(user.token);
 
-      print('SIGNUP TOKEN SAVED: ${user.token}');
+      developer.log('SIGNUP TOKEN SAVED: ${user.token}');
 
       return Right(user);
     } on ServerException catch (e) {
-      print('SIGNUP SERVER ERROR: ${e.message}');
+      developer.log('SIGNUP SERVER ERROR: ${e.message}');
       return Left(Failure(e.message));
     } catch (e) {
-      print('SIGNUP ERROR: $e');
+      developer.log('SIGNUP ERROR: $e');
       return Left(Failure(e.toString()));
     }
   }
@@ -55,14 +56,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await localStorage.saveToken(user.token);
 
-      print('LOGIN TOKEN SAVED: ${user.token}');
+     developer.log('LOGIN TOKEN SAVED: ${user.token}');
 
       return Right(user);
     } on ServerException catch (e) {
-      print('LOGIN SERVER ERROR: ${e.message}');
+      developer.log('LOGIN SERVER ERROR: ${e.message}');
       return Left(Failure(e.message));
     } catch (e) {
-      print('LOGIN ERROR: $e');
+      developer.log('LOGIN ERROR: $e');
       return Left(Failure(e.toString()));
     }
   }
@@ -72,28 +73,28 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = localStorage.getToken();
 
-      print('SAVED TOKEN: $token');
+     developer.log('SAVED TOKEN: $token');
 
       if (token == null || token.isEmpty) {
-        print('NO TOKEN FOUND');
+        developer.log('NO TOKEN FOUND');
 
         return Left(
           Failure('No authentication token found'),
         );
       }
 
-      print('CALLING GET CURRENT USER');
+      developer.log('CALLING GET CURRENT USER');
 
       final user = await authRemoteDataSource.getCurrentUser(
         token: token,
       );
 
-      print('CURRENT USER FOUND: ${user.name}');
-      print('CURRENT USER EMAIL: ${user.email}');
+      developer.log('CURRENT USER FOUND: ${user.name}');
+       developer.log('CURRENT USER EMAIL: ${user.email}');
 
       return Right(user);
     } on ServerException catch (e) {
-      print('CURRENT USER SERVER ERROR: ${e.message}');
+     developer.log('CURRENT USER SERVER ERROR: ${e.message}');
 
       await localStorage.removeToken();
 
@@ -101,7 +102,7 @@ class AuthRepositoryImpl implements AuthRepository {
         Failure(e.message),
       );
     } catch (e) {
-      print('CURRENT USER ERROR: $e');
+      developer.log('CURRENT USER ERROR: $e');
 
       return Left(
         Failure(e.toString()),
@@ -114,7 +115,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final token = localStorage.getToken();
 
-      print('LOGOUT TOKEN: $token');
+     developer.log('LOGOUT TOKEN: $token');
 
       if (token != null && token.isNotEmpty) {
         await authRemoteDataSource.logout(
@@ -124,17 +125,17 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await localStorage.removeToken();
 
-      print('TOKEN REMOVED');
+     developer.log('TOKEN REMOVED');
 
       return const Right(null);
     } on ServerException catch (e) {
-      print('LOGOUT SERVER ERROR: ${e.message}');
+     developer.log('LOGOUT SERVER ERROR: ${e.message}');
 
       return Left(
         Failure(e.message),
       );
     } catch (e) {
-      print('LOGOUT ERROR: $e');
+      developer.log('LOGOUT ERROR: $e');
 
       return Left(
         Failure(e.toString()),

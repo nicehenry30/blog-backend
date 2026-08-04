@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/auth_bloc.dart';
-import 'home_page.dart';
 import 'login_page.dart';
+import 'main_navigation.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -21,7 +21,7 @@ class AuthGate extends StatelessWidget {
         }
 
         if (state is AuthAuthenticated) {
-          return HomePage(
+          return MainNavigation(
             name: state.user.name,
             email: state.user.email,
           );
@@ -47,3 +47,4 @@ class AuthGate extends StatelessWidget {
     );
   }
 }
+

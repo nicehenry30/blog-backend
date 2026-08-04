@@ -16,9 +16,13 @@ abstract interface class AuthRemoteDataSource {
     required String password,
   });
 
-  Future<AuthUser> getCurrentUser({required String token});
+  Future<AuthUser> getCurrentUser({
+    required String token,
+  });
 
-  Future<void> logout({required String token});
+  Future<void> logout({
+    required String token,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -40,16 +44,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+      }),
     );
 
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 201) {
-      return AuthUser.fromJson(data['user'], token: data['token']);
+      return AuthUser.fromJson(
+        data['user'],
+        token: data['token'],
+      );
     }
 
-    throw ServerException(message: data['message'] ?? 'Registration failed');
+    throw ServerException(
+      message: data['message'] ?? 'Registration failed',
+    );
   }
 
   @override
@@ -63,44 +76,65 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({'email': email, 'password': password}),
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
     );
 
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      return AuthUser.fromJson(data['user'], token: data['token']);
+      return AuthUser.fromJson(
+        data['user'],
+        token: data['token'],
+      );
     }
 
-    throw ServerException(message: data['message'] ?? 'Login failed');
-  }
-
-  
- @override
-Future<AuthUser> getCurrentUser({required String token}) async {
-  final response = await client.get(
-    Uri.parse('$baseUrl/user'),
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-  );
-
-  final data = jsonDecode(response.body);
-
-  if (response.statusCode == 200) {
-    return AuthUser.fromJson(
-      data['user'],
-      token: token,
+    throw ServerException(
+      message: data['message'] ?? 'Login failed',
     );
   }
 
-  throw ServerException(
-    message: data['message'] ?? 'Unable to get current user',
-  );
-}
   @override
-  Future<void> logout({required String token}) async {
+  Future<AuthUser> getCurrentUser({
+    required String token,
+  }) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/user'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      // Laravel returns:
+      // {
+      //   "user": {
+      //     "id": 1,
+      //     "name": "Henry",
+      //     "email": "..."
+      //   }
+      // }
+
+      return AuthUser.fromJson(
+        data['user'],
+        token: token,
+      );
+    }
+
+    throw ServerException(
+      message: data['message'] ?? 'Unable to get current user',
+    );
+  }
+
+  @override
+  Future<void> logout({
+    required String token,
+  }) async {
     final response = await client.post(
       Uri.parse('$baseUrl/logout'),
       headers: {
@@ -113,7 +147,10 @@ Future<AuthUser> getCurrentUser({required String token}) async {
     if (response.statusCode != 200) {
       final data = jsonDecode(response.body);
 
-      throw ServerException(message: data['message'] ?? 'Logout failed');
+      throw ServerException(
+        message: data['message'] ?? 'Logout failed',
+      );
     }
   }
 }
+

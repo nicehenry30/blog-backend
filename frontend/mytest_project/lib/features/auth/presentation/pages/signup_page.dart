@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mytest_project/core/theme/app_pallete.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../widgets/auth_field.dart';
@@ -18,8 +17,6 @@ class _SignupPageState extends State<SignupPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  final formKey = GlobalKey<FormState>();
-
   @override
   void dispose() {
     nameController.dispose();
@@ -28,44 +25,57 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
+  void _signUp() {
+    context.read<AuthBloc>().add(
+          AuthSignUp(
+            name: nameController.text.trim(),
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          ),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          final isLoading = state is AuthLoading;
-
-          return Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Form(
-              key: formKey,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Create Account',
                     style: TextStyle(
-                      fontSize: 40,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    'Create your Tradewisser account',
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 40),
 
                   AuthField(
                     hintText: 'Name',
                     controller: nameController,
                   ),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 16),
 
                   AuthField(
                     hintText: 'Email',
                     controller: emailController,
                   ),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 16),
 
                   AuthField(
                     hintText: 'Password',
@@ -73,71 +83,38 @@ class _SignupPageState extends State<SignupPage> {
                     isObscureText: true,
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   AuthGradientButton(
-                    buttonText: isLoading
-                        ? 'Creating Account...'
-                        : 'Sign Up',
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            if (formKey.currentState!.validate()) {
-                              context.read<AuthBloc>().add(
-                                AuthSignUp(
-                                  name: nameController.text.trim(),
-                                  email: emailController.text.trim(),
-                                  password: passwordController.text.trim(),
-                                ),
-                              );
-                            }
-                          },
+                   buttonText: 'Sign Up',
+                    onPressed: _signUp,
                   ),
 
                   const SizedBox(height: 20),
 
-                  GestureDetector(
-                    onTap: isLoading
-                        ? null
-                        : () {
-                            Navigator.pop(context);
-                          },
-                    child: RichText(
-                      text: TextSpan(
-                        text: 'Already have an account?',
-                        style: Theme.of(context).textTheme.titleMedium,
-                        children: [
-                          TextSpan(
-                            text: ' Sign In',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  color: AppPallete.gradient2,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Already have an account?',
                       ),
-                    ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'Login',
+                        ),
+                      ),
+                    ],
                   ),
-
-                  if (state is AuthFailure) ...[
-                    const SizedBox(height: 15),
-                    Text(
-                      state.message,
-                      style: const TextStyle(
-                        color: Colors.red,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
                 ],
               ),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 }
+
