@@ -127,6 +127,23 @@ import 'package:mytest_project/features/signals/domain/usecases/get_trading_sign
 import 'package:mytest_project/features/signals/domain/usecases/get_trading_signal_details.dart';
 
 import 'package:mytest_project/features/signals/presentation/bloc/trading_signal_bloc.dart';
+
+// ============================================================================
+// SUBSCRIPTION FEATURE
+// ============================================================================
+
+import 'package:mytest_project/features/subscription/data/datasources/subscription_remote_data_source.dart';
+import 'package:mytest_project/features/subscription/data/datasources/subscription_remote_data_source_impl.dart';
+
+import 'package:mytest_project/features/subscription/data/repositories/subscription_repository_impl.dart';
+
+import 'package:mytest_project/features/subscription/domain/repositories/subscription_repository.dart';
+
+import 'package:mytest_project/features/subscription/domain/usecases/get_plans.dart';
+import 'package:mytest_project/features/subscription/domain/usecases/get_current_subscription.dart';
+import 'package:mytest_project/features/subscription/domain/usecases/initialize_payment.dart';
+
+import 'package:mytest_project/features/subscription/presentation/bloc/subscription_bloc.dart';
 // ============================================================================
 // SERVICE LOCATOR
 // ============================================================================
@@ -604,4 +621,63 @@ serviceLocator.registerFactory<
     getTradingSignalDetails: serviceLocator(),
   ),
 );
+
+// ==========================================================================
+// SUBSCRIPTION FEATURE
+// ==========================================================================
+
+// --------------------------------------------------------------------------
+// Subscription Remote Data Source
+// --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<SubscriptionRemoteDataSource>(
+  () => SubscriptionRemoteDataSourceImpl(
+    serviceLocator(),
+    serviceLocator(),
+  ),
+);
+
+// --------------------------------------------------------------------------
+// Subscription Repository
+// --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<SubscriptionRepository>(
+  () => SubscriptionRepositoryImpl(
+    serviceLocator(),
+  ),
+);
+
+// --------------------------------------------------------------------------
+// Subscription Use Cases
+// --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<GetPlans>(
+  () => GetPlans(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<GetCurrentSubscription>(
+  () => GetCurrentSubscription(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<InitializePayment>(
+  () => InitializePayment(
+    serviceLocator(),
+  ),
+);
+
+// --------------------------------------------------------------------------
+// Subscription BLoC
+// --------------------------------------------------------------------------
+
+serviceLocator.registerFactory<SubscriptionBloc>(
+  () => SubscriptionBloc(
+    getPlans: serviceLocator(),
+    getCurrentSubscription: serviceLocator(),
+    initializePayment: serviceLocator(),
+    ),
+  );
 }
