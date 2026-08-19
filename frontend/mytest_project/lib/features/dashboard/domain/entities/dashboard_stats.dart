@@ -2,7 +2,6 @@ class DashboardStats {
   final int totalTrades;
   final int winningTrades;
   final int losingTrades;
-
   final double winRate;
   final double totalProfit;
 

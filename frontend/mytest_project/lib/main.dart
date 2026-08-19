@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 import 'package:mytest_project/core/di/injection_container.dart';
 import 'package:mytest_project/core/theme/theme.dart';
 
@@ -18,6 +21,10 @@ import 'package:mytest_project/features/signals/presentation/bloc/trading_signal
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   await initDependencies();
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RiskSetting;
 use App\Models\Trade;
+use App\Models\Signal;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -50,6 +51,54 @@ class DashboardController extends Controller
         );
 
         // ================================================================
+        // LATEST ACTIVE SIGNAL
+        // ================================================================
+
+        $latestSignal = Signal::with('symbol')
+            ->whereIn('status', [
+                Signal::STATUS_PUBLISHED,
+                Signal::STATUS_RUNNING,
+            ])
+            ->latest('published_at')
+            ->first();
+
+        // ================================================================
+        // FORMAT LATEST SIGNAL FOR DASHBOARD
+        // ================================================================
+
+        $latestSignalData = null;
+
+        if ($latestSignal) {
+            $latestSignalData = [
+                'id' => $latestSignal->id,
+
+                'symbol' => $latestSignal->symbol?->symbol ?? '',
+
+                'direction' => $latestSignal->direction,
+
+                'entry_price' => $latestSignal->entry_price,
+
+                'stop_loss' => $latestSignal->stop_loss,
+
+                'take_profit' => $latestSignal->take_profit,
+
+                'take_profit_2' => $latestSignal->take_profit_2,
+
+                'take_profit_3' => $latestSignal->take_profit_3,
+
+                'timeframe' => $latestSignal->timeframe,
+
+                'strategy' => $latestSignal->strategy,
+
+                'status' => $latestSignal->status,
+
+                'signal_quality' => $latestSignal->signal_quality,
+
+                'overall_confidence' => $latestSignal->overall_confidence,
+            ];
+        }
+
+        // ================================================================
         // DASHBOARD RESPONSE
         // ================================================================
 
@@ -67,6 +116,8 @@ class DashboardController extends Controller
                 'daily_loss_limit' => $riskSetting->daily_loss_limit,
                 'max_drawdown' => $riskSetting->max_drawdown,
             ],
+
+            'latest_signal' => $latestSignalData,
         ]);
     }
 }

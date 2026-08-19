@@ -1,121 +1,127 @@
-<?php
+@extends('layouts.app')
 
-namespace Database\Seeders;
+@section('title', 'Create Symbol')
 
-use Illuminate\Database\Seeder;
-use App\Models\Symbol;
+@section('content')
 
-class SymbolSeeder extends Seeder
-{
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
-    {
-        $symbols = [
+<div class="max-w-3xl mx-auto bg-white rounded-xl shadow p-6">
 
-            // Metals
-            [
-                'symbol' => 'XAUUSD',
-                'name' => 'Gold',
-                'asset_type' => 'Metal',
-                'broker_symbol' => 'XAUUSD',
-                'digits' => 2,
-                'active' => true,
-            ],
+    <h2 class="text-2xl font-bold mb-6">
+        Create Trading Symbol
+    </h2>
 
-            [
-                'symbol' => 'XAGUSD',
-                'name' => 'Silver',
-                'asset_type' => 'Metal',
-                'broker_symbol' => 'XAGUSD',
-                'digits' => 3,
-                'active' => true,
-            ],
+    <form method="POST" action="{{ route('admin.symbols.store') }}">
 
-            // Forex
-            [
-                'symbol' => 'EURUSD',
-                'name' => 'Euro / US Dollar',
-                'asset_type' => 'Forex',
-                'broker_symbol' => 'EURUSD',
-                'digits' => 5,
-                'active' => true,
-            ],
+        @csrf
 
-            [
-                'symbol' => 'GBPUSD',
-                'name' => 'British Pound / US Dollar',
-                'asset_type' => 'Forex',
-                'broker_symbol' => 'GBPUSD',
-                'digits' => 5,
-                'active' => true,
-            ],
+        <div class="mb-4">
+            <label class="block font-medium mb-2">
+                Symbol
+            </label>
 
-            [
-                'symbol' => 'USDJPY',
-                'name' => 'US Dollar / Japanese Yen',
-                'asset_type' => 'Forex',
-                'broker_symbol' => 'USDJPY',
-                'digits' => 3,
-                'active' => true,
-            ],
+            <input
+                type="text"
+                name="symbol"
+                value="{{ old('symbol') }}"
+                class="w-full border rounded-lg px-4 py-3"
+                required
+            >
+        </div>
 
-            // Crypto
-            [
-                'symbol' => 'BTCUSD',
-                'name' => 'Bitcoin',
-                'asset_type' => 'Crypto',
-                'broker_symbol' => 'BTCUSD',
-                'digits' => 2,
-                'active' => true,
-            ],
+        <div class="mb-4">
+            <label class="block font-medium mb-2">
+                Name
+            </label>
 
-            [
-                'symbol' => 'ETHUSD',
-                'name' => 'Ethereum',
-                'asset_type' => 'Crypto',
-                'broker_symbol' => 'ETHUSD',
-                'digits' => 2,
-                'active' => true,
-            ],
+            <input
+                type="text"
+                name="name"
+                value="{{ old('name') }}"
+                class="w-full border rounded-lg px-4 py-3"
+                required
+            >
+        </div>
 
-            // Indices
-            [
-                'symbol' => 'NAS100',
-                'name' => 'Nasdaq 100',
-                'asset_type' => 'Index',
-                'broker_symbol' => 'USTEC',
-                'digits' => 1,
-                'active' => true,
-            ],
+        <div class="mb-4">
+            <label class="block font-medium mb-2">
+                Asset Type
+            </label>
 
-            [
-                'symbol' => 'US30',
-                'name' => 'Dow Jones',
-                'asset_type' => 'Index',
-                'broker_symbol' => 'US30',
-                'digits' => 1,
-                'active' => true,
-            ],
+            <select
+                name="asset_type"
+                class="w-full border rounded-lg px-4 py-3"
+            >
+                <option value="Forex">Forex</option>
+                <option value="Metal">Metal</option>
+                <option value="Crypto">Crypto</option>
+                <option value="Index">Index</option>
+                <option value="Commodity">Commodity</option>
+                <option value="Stock">Stock</option>
+                <option value="ETF">ETF</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
 
-            // Commodities
-            [
-                'symbol' => 'WTI',
-                'name' => 'Crude Oil',
-                'asset_type' => 'Commodity',
-                'broker_symbol' => 'USOIL',
-                'digits' => 2,
-                'active' => true,
-            ],
+        <div class="mb-4">
+            <label class="block font-medium mb-2">
+                Broker Symbol
+            </label>
 
-        ];
+            <input
+                type="text"
+                name="broker_symbol"
+                value="{{ old('broker_symbol') }}"
+                class="w-full border rounded-lg px-4 py-3"
+            >
+        </div>
 
-        foreach ($symbols as $symbol) {
-            Symbol::updateOrCreate(
-                ['symbol' => $symbol['symbol']],
-                $symbol
-            );
-        }
-    }
-}
+        <div class="mb-4">
+            <label class="block font-medium mb-2">
+                Digits
+            </label>
+
+            <input
+                type="number"
+                name="digits"
+                value="{{ old('digits', 5) }}"
+                class="w-full border rounded-lg px-4 py-3"
+                required
+            >
+        </div>
+
+        <div class="mb-6">
+            <label class="inline-flex items-center">
+                <input
+                    type="checkbox"
+                    name="active"
+                    value="1"
+                    checked
+                    class="mr-2"
+                >
+                Active
+            </label>
+        </div>
+
+        <div class="flex gap-3">
+
+            <button
+                type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+            >
+                Save Symbol
+            </button>
+
+            <a
+                href="{{ route('admin.symbols.index') }}"
+                class="px-6 py-3 border rounded-lg"
+            >
+                Cancel
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@endsection

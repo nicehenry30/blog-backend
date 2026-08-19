@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Services\PaymentService;
 use App\Services\PaystackService;
 use Illuminate\Http\Request;
-use App\Services\PaymentService;
 
 class PaymentController extends Controller
 {
@@ -22,10 +22,80 @@ class PaymentController extends Controller
     }
 
     /**
-     * Verify a completed payment.
+     * List authenticated user's payments.
      */
-    public function verify(Request $request, Payment $payment)
+    public function index(Request $request)
     {
+        $payments = $request->user()
+            ->payments()
+            ->with([
+                'subscription.plan',
+            ])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'data' => $payments,
+        ]);
+    }
+
+    /**
+     * Show a single payment.
+     */
+    public function show(Payment $payment)
+    {
+        $payment->load([
+            'subscription.plan',
+        ]);
+
+        return response()->json([
+            'data' => $payment,
+        ]);
+    }
+
+    /**
+     * Initialize a Paystack payment.
+     */
+    public function initialize(Request $request)
+    {
+        $validated = $request->validate([
+            'plan_id' => [
+                'required',
+                'exists:plans,id',
+            ],
+        ]);
+
+        return response()->json(
+            $this->paymentService->initialize(
+                $request->user(),
+                $validated['plan_id']
+            )
+        );
+    }
+
+    /**
+     * Verify a payment using its Paystack reference.
+     */
+    public function verify(Request $request)
+    {
+        $validated = $request->validate([
+            'reference' => [
+                'required',
+                'string',
+            ],
+        ]);
+
+        $payment = Payment::where(
+            'reference',
+            $validated['reference']
+        )->first();
+
+        if (! $payment) {
+            return response()->json([
+                'message' => 'Payment not found.',
+            ], 404);
+        }
+
         $response = $this->paystackService
             ->verifyTransaction($payment->reference);
 
@@ -35,22 +105,17 @@ class PaymentController extends Controller
             isset($response['data']['status']) &&
             $response['data']['status'] === 'success'
         ) {
-
-            $payment->update([
-                'status' => 'successful',
-                'transaction_id' => $response['data']['reference'],
-                'gateway_response' => $response['data'],
-                'paid_at' => now(),
-            ]);
-
-            $payment->subscription->update([
-                'status' => 'active',
-                'starts_at' => now(),
-                'expires_at' => now()->addMonth(),
-            ]);
+            $this->paymentService->completePayment(
+                $payment,
+                $response['data']['reference'],
+                $response['data']
+            );
 
             return response()->json([
                 'message' => 'Payment verified successfully.',
+                'subscription' => $payment
+                    ->subscription
+                    ->fresh(),
             ]);
         }
 
@@ -64,11 +129,13 @@ class PaymentController extends Controller
     }
 
     /**
-     * Paystack webhook.
+     * Handle Paystack webhook.
      */
-        public function webhook(Request $request)
+    public function webhook(Request $request)
     {
-        $signature = $request->header('x-paystack-signature');
+        $signature = $request->header(
+            'x-paystack-signature'
+        );
 
         $secret = env('PAYSTACK_SECRET_KEY');
 
@@ -87,7 +154,7 @@ class PaymentController extends Controller
         $payload = $request->all();
 
         if (
-            !isset($payload['event']) ||
+            ! isset($payload['event']) ||
             $payload['event'] !== 'charge.success'
         ) {
             return response()->json([
@@ -102,7 +169,7 @@ class PaymentController extends Controller
             $reference
         )->first();
 
-        if (!$payment) {
+        if (! $payment) {
             return response()->json([
                 'message' => 'Payment not found.',
             ], 404);
@@ -114,40 +181,14 @@ class PaymentController extends Controller
             ]);
         }
 
-        $payment->update([
-            'status' => 'successful',
-            'transaction_id' => $payload['data']['id'],
-            'gateway_response' => $payload['data'],
-            'paid_at' => now(),
-        ]);
-
-        $payment->subscription->update([
-            'status' => 'active',
-            'starts_at' => now(),
-            'expires_at' => now()->addMonth(),
-        ]);
+        $this->paymentService->completePayment(
+            $payment,
+            $payload['data']['id'],
+            $payload['data']
+        );
 
         return response()->json([
             'message' => 'Webhook processed successfully.',
         ]);
     }
-
-        public function initialize(Request $request)
-    {
-        $validated = $request->validate([
-            'plan_id' => [
-                'required',
-                'exists:plans,id',
-            ],
-        ]);
-
-        return response()->json(
-            $this->paymentService->initialize(
-                $request->user(),
-                $validated['plan_id']
-            )
-        );
-    }
-
-    
 }

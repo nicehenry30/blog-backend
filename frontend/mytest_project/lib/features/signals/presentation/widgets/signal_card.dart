@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'signal_visibility_badge.dart';
 import '../../domain/entities/trading_signal.dart';
 
 import 'confidence_indicator.dart';
@@ -33,24 +33,72 @@ class SignalCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${signal.symbol} ${signal.direction}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SignalStatusBadge(
-                    status: signal.status,
-                  ),
-                ],
-              ),
+                  Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
 
-              const SizedBox(height: 16),
+        Expanded(
+          child: Text(
+            '${signal.symbol} ${signal.direction}',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+
+            SignalStatusBadge(
+              status: signal.status,
+            ),
+
+            const SizedBox(height: 8),
+
+            SignalVisibilityBadge(
+              visibility: signal.visibility,
+            ),
+
+          ],
+        ),
+
+      ],
+    ),
+        const SizedBox(height: 16),
+       if (signal.locked) ...[
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.orange.shade200,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.lock,
+              color: Colors.orange,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'This is a ${signal.upgradePlan} signal. Upgrade to unlock the full trade setup.',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      const SizedBox(height: 20),
+    ],
 
               SignalQualityBadge(
                 quality: signal.signalQuality,
@@ -69,19 +117,19 @@ class SignalCard extends StatelessWidget {
                   Expanded(
                     child: _PriceTile(
                       label: 'Entry',
-                      value: signal.entryPrice.toString(),
+                      value: signal.entryPrice.toStringAsFixed(signal.digits),
                     ),
                   ),
                   Expanded(
                     child: _PriceTile(
                       label: 'SL',
-                      value: signal.stopLoss.toString(),
+                      value: signal.stopLoss.toStringAsFixed(signal.digits),
                     ),
                   ),
                   Expanded(
                     child: _PriceTile(
                       label: 'TP',
-                      value: signal.takeProfit.toString(),
+                      value: signal.takeProfit.toStringAsFixed(signal.digits),
                     ),
                   ),
                 ],

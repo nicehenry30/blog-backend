@@ -9,7 +9,7 @@ class GetCurrentSubscription {
 
   GetCurrentSubscription(this.repository);
 
-  Future<Either<Failure, Subscription>> call() async {
+  Future<Either<Failure, Subscription>> call() {
     return repository.getCurrentSubscription();
   }
 }

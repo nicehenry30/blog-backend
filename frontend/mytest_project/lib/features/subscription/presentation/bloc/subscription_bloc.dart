@@ -2,73 +2,42 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
+
 import '../../domain/usecases/get_current_subscription.dart';
 import '../../domain/usecases/get_plans.dart';
 import '../../domain/usecases/initialize_payment.dart';
+import '../../domain/usecases/verify_payment.dart';
 
-//
-// EVENTS
-//
-
-abstract class SubscriptionEvent {}
-
-class LoadSubscription extends SubscriptionEvent {}
-
-class InitializeSubscriptionPayment extends SubscriptionEvent {
-  final int planId;
-
-  InitializeSubscriptionPayment(this.planId);
-}
-
-//
-// STATES
-//
-
-abstract class SubscriptionState {}
-
-class SubscriptionInitial extends SubscriptionState {}
-
-class SubscriptionLoading extends SubscriptionState {}
-
-class SubscriptionLoaded extends SubscriptionState {
-  final List<Plan> plans;
-  final Subscription? currentSubscription;
-
-  SubscriptionLoaded({
-    required this.plans,
-    required this.currentSubscription,
-  });
-}
-
-class SubscriptionPaymentReady extends SubscriptionState {
-  final String authorizationUrl;
-
-  SubscriptionPaymentReady(this.authorizationUrl);
-}
-
-class SubscriptionFailure extends SubscriptionState {
-  final String message;
-
-  SubscriptionFailure(this.message);
-}
-
-//
-// BLOC
-//
+part 'subscription_event.dart';
+part 'subscription_state.dart';
 
 class SubscriptionBloc
     extends Bloc<SubscriptionEvent, SubscriptionState> {
   final GetPlans getPlans;
+
   final GetCurrentSubscription getCurrentSubscription;
+
   final InitializePayment initializePayment;
+
+  final VerifyPayment verifyPayment;
 
   SubscriptionBloc({
     required this.getPlans,
     required this.getCurrentSubscription,
     required this.initializePayment,
+    required this.verifyPayment,
   }) : super(SubscriptionInitial()) {
-    on<LoadSubscription>(_onLoadSubscription);
-    on<InitializeSubscriptionPayment>(_onInitializePayment);
+    on<LoadSubscription>(
+      _onLoadSubscription,
+    );
+
+    on<InitializeSubscriptionPayment>(
+      _onInitializePayment,
+    );
+
+    on<VerifySubscriptionPayment>(
+      _onVerifyPayment,
+    );
   }
 
   Future<void> _onLoadSubscription(
@@ -79,7 +48,8 @@ class SubscriptionBloc
 
     final plansResult = await getPlans();
 
-    final subscriptionResult = await getCurrentSubscription();
+    final subscriptionResult =
+        await getCurrentSubscription();
 
     plansResult.fold(
       (failure) {
@@ -135,6 +105,48 @@ class SubscriptionBloc
           SubscriptionPaymentReady(
             url,
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onVerifyPayment(
+    VerifySubscriptionPayment event,
+    Emitter<SubscriptionState> emit,
+  ) async {
+    emit(SubscriptionLoading());
+
+    final result = await verifyPayment(
+      event.reference,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          SubscriptionFailure(
+            failure.message,
+          ),
+        );
+      },
+      (subscription) async {
+        final plansResult = await getPlans();
+
+        plansResult.fold(
+          (failure) {
+            emit(
+              SubscriptionFailure(
+                failure.message,
+              ),
+            );
+          },
+          (plans) {
+            emit(
+              SubscriptionLoaded(
+                plans: plans,
+                currentSubscription: subscription,
+              ),
+            );
+          },
         );
       },
     );

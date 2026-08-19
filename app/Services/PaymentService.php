@@ -72,7 +72,7 @@ class PaymentService
 
             $response = $this->paystackService->initializeTransaction([
                 'email' => $user->email,
-                'amount' => (int) ($plan->price * 100), // Kobo
+                'amount' => (int) ($plan->price * 100),
                 'reference' => $reference,
                 'callback_url' => url('/payment/callback'),
                 'metadata' => [
@@ -92,11 +92,57 @@ class PaymentService
                 $response['status'] !== true
             ) {
                 throw new \Exception(
-                    $response['message'] ?? 'Failed to initialize Paystack transaction.'
+                    $response['message']
+                        ?? 'Failed to initialize Paystack transaction.'
                 );
             }
 
             return $response;
         });
     }
+
+    /**
+     * Complete a successful payment and activate its subscription.
+     *
+     * This method is shared by payment gateways such as
+     * Paystack and future crypto payments.
+     */
+    public function completePayment(
+        Payment $payment,
+        string $transactionId,
+        array $gatewayResponse = []
+    ): void {
+        $subscription = $payment->subscription;
+        $plan = $subscription->plan;
+
+        $startsAt = now();
+
+        $expiresAt = match ($plan->billing_cycle) {
+            'monthly' => $startsAt->copy()->addMonth(),
+
+            'three_months' => $startsAt->copy()->addMonths(3),
+
+            'yearly' => $startsAt->copy()->addYear(),
+
+            'two_year' => $startsAt->copy()->addYears(2),
+
+            default => throw new \Exception(
+                'Invalid billing cycle: ' . $plan->billing_cycle
+            ),
+        };
+
+        $payment->update([
+            'status' => 'successful',
+            'transaction_id' => $transactionId,
+            'gateway_response' => $gatewayResponse,
+            'paid_at' => $startsAt,
+        ]);
+
+        $subscription->update([
+            'status' => 'active',
+            'starts_at' => $startsAt,
+            'expires_at' => $expiresAt,
+        ]);
+    }
+
 }

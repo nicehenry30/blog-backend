@@ -119,6 +119,187 @@
     </div>
 
 </div>
+{{-- ===========================
+     SIGNAL ACCESS
+=========================== --}}
+
+<div class="bg-white rounded-xl shadow p-6 mt-8">
+
+    <h2 class="text-xl font-semibold mb-6">
+        Signal Access
+    </h2>
+
+    <div>
+
+        <label class="block font-medium mb-4">
+            Who can view this signal?
+        </label>
+
+        <div class="space-y-3">
+
+            <label class="flex items-center gap-3">
+
+                <input
+                    type="radio"
+                    name="visibility"
+                    value="free"
+                    {{ old('visibility', $signal->visibility ?? 'free') == 'free' ? 'checked' : '' }}
+                >
+
+                <div>
+
+                    <div class="font-medium">
+                        Free
+                    </div>
+
+                    <div class="text-sm text-gray-500">
+                        Visible to every registered Tradewisser user.
+                    </div>
+
+                </div>
+
+            </label>
+
+            <label class="flex items-center gap-3">
+
+                <input
+                    type="radio"
+                    name="visibility"
+                    value="premium"
+                    {{ old('visibility', $signal->visibility ?? '') == 'premium' ? 'checked' : '' }}
+                >
+
+                <div>
+
+                    <div class="font-medium">
+                        Premium
+                    </div>
+
+                    <div class="text-sm text-gray-500">
+                        Visible to Premium and Pro subscribers.
+                    </div>
+
+                </div>
+
+            </label>
+
+            <label class="flex items-center gap-3">
+
+                <input
+                    type="radio"
+                    name="visibility"
+                    value="pro"
+                    {{ old('visibility', $signal->visibility ?? '') == 'pro' ? 'checked' : '' }}
+                >
+
+                <div>
+
+                    <div class="font-medium">
+                        Pro
+                    </div>
+
+                    <div class="text-sm text-gray-500">
+                        Visible only to Pro subscribers.
+                    </div>
+
+                </div>
+
+            </label>
+
+        </div>
+
+        @error('visibility')
+            <p class="text-red-500 text-sm mt-2">
+                {{ $message }}
+            </p>
+        @enderror
+
+    </div>
+
+</div>
+
+{{-- ===========================
+     AUTO TRADING
+=========================== --}}
+
+<div class="bg-white rounded-xl shadow p-6 mt-8">
+
+    <h2 class="text-xl font-semibold mb-6">
+        Auto Trading
+    </h2>
+
+    <div>
+
+        <label class="block font-medium mb-4">
+            Execution Mode
+        </label>
+
+        <div class="space-y-4">
+
+            {{-- Monitor Only --}}
+            <label class="flex items-start gap-3">
+
+                <input
+                    type="radio"
+                    name="auto_executable"
+                    value="0"
+                    class="mt-1"
+                    {{ old('auto_executable', $signal->auto_executable ?? 0) == 0 ? 'checked' : '' }}
+                >
+
+                <div>
+
+                    <div class="font-medium">
+                        Monitor Only
+                    </div>
+
+                    <div class="text-sm text-gray-500">
+                        Guardian will receive and monitor this signal,
+                        but will NOT open a trade automatically.
+                    </div>
+
+                </div>
+
+            </label>
+
+
+            {{-- Auto Execute --}}
+            <label class="flex items-start gap-3">
+
+                <input
+                    type="radio"
+                    name="auto_executable"
+                    value="1"
+                    class="mt-1"
+                    {{ old('auto_executable', $signal->auto_executable ?? 0) == 1 ? 'checked' : '' }}
+                >
+
+                <div>
+
+                    <div class="font-medium">
+                        Auto Execute
+                    </div>
+
+                    <div class="text-sm text-gray-500">
+                        Guardian is authorized to automatically execute
+                        this signal on the connected MT4 account.
+                    </div>
+
+                </div>
+
+            </label>
+
+        </div>
+
+        @error('auto_executable')
+            <p class="text-red-500 text-sm mt-2">
+                {{ $message }}
+            </p>
+        @enderror
+
+    </div>
+
+</div>
 
 {{-- ===========================
      TRADE SETUP
@@ -132,6 +313,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        {{-- Entry Price --}}
         <div>
 
             <label class="block font-medium mb-2">
@@ -153,6 +335,7 @@
 
         </div>
 
+        {{-- Stop Loss --}}
         <div>
 
             <label class="block font-medium mb-2">
@@ -174,10 +357,11 @@
 
         </div>
 
+        {{-- Take Profit 1 --}}
         <div>
 
             <label class="block font-medium mb-2">
-                Take Profit
+                Take Profit 1
             </label>
 
             <input
@@ -187,17 +371,47 @@
                 value="{{ old('take_profit', $signal->take_profit ?? '') }}"
                 class="w-full border rounded-lg px-4 py-3">
 
-            @error('take_profit')
-                <p class="text-red-500 text-sm mt-2">
-                    {{ $message }}
-                </p>
-            @enderror
+        </div>
+
+        {{-- Take Profit 2 --}}
+        <div>
+
+            <label class="block font-medium mb-2">
+                Take Profit 2 (Optional)
+            </label>
+
+            <input
+                type="number"
+                step="0.00001"
+                name="take_profit_2"
+                value="{{ old('take_profit_2', $signal->take_profit_2 ?? '') }}"
+                class="w-full border rounded-lg px-4 py-3">
+
+        </div>
+
+        {{-- Take Profit 3 --}}
+        <div>
+
+            <label class="block font-medium mb-2">
+                Take Profit 3 (Optional)
+            </label>
+
+            <input
+                type="number"
+                step="0.00001"
+                name="take_profit_3"
+                value="{{ old('take_profit_3', $signal->take_profit_3 ?? '') }}"
+                class="w-full border rounded-lg px-4 py-3">
 
         </div>
 
     </div>
 
 </div>
+{{-- ===========================
+     ANALYSIS
+=========================== --}}
+
 {{-- ===========================
      ANALYSIS
 =========================== --}}
@@ -210,6 +424,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+        {{-- Signal Quality --}}
         <div>
 
             <label class="block font-medium mb-2">
@@ -232,6 +447,8 @@
 
         </div>
 
+
+        {{-- Overall Confidence --}}
         <div>
 
             <label class="block font-medium mb-2">
@@ -254,6 +471,8 @@
 
         </div>
 
+
+        {{-- Strategy --}}
         <div class="md:col-span-2">
 
             <label class="block font-medium mb-2">
@@ -266,6 +485,75 @@
                 value="{{ old('strategy', $signal->strategy ?? '') }}"
                 class="w-full border rounded-lg px-4 py-3"
                 placeholder="ICT, SMC, Breakout...">
+
+        </div>
+
+
+        {{-- Market Analysis --}}
+        <div class="md:col-span-2">
+
+            <label class="block font-medium mb-2">
+                Market Analysis
+            </label>
+
+            <textarea
+                name="analysis"
+                rows="5"
+                class="w-full border rounded-lg px-4 py-3"
+                placeholder="Enter your market analysis...">{{ old('analysis', $signal->analysis ?? '') }}</textarea>
+
+            @error('analysis')
+                <p class="text-red-500 text-sm mt-2">
+                    {{ $message }}
+                </p>
+            @enderror
+
+        </div>
+
+
+        {{-- AI Score --}}
+        <div>
+
+            <label class="block font-medium mb-2">
+                AI Score (%)
+            </label>
+
+            <input
+                type="number"
+                min="0"
+                max="100"
+                name="ai_score"
+                value="{{ old('ai_score', $signal->ai_score ?? '') }}"
+                class="w-full border rounded-lg px-4 py-3"
+                placeholder="0 - 100">
+
+            @error('ai_score')
+                <p class="text-red-500 text-sm mt-2">
+                    {{ $message }}
+                </p>
+            @enderror
+
+        </div>
+
+
+        {{-- AI Comment --}}
+        <div>
+
+            <label class="block font-medium mb-2">
+                AI Comment
+            </label>
+
+            <textarea
+                name="ai_comment"
+                rows="3"
+                class="w-full border rounded-lg px-4 py-3"
+                placeholder="AI confirmation or explanation...">{{ old('ai_comment', $signal->ai_comment ?? '') }}</textarea>
+
+            @error('ai_comment')
+                <p class="text-red-500 text-sm mt-2">
+                    {{ $message }}
+                </p>
+            @enderror
 
         </div>
 

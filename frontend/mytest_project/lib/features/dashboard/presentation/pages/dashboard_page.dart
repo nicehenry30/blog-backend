@@ -15,6 +15,9 @@ import 'package:mytest_project/features/dashboard/presentation/widgets/welcome_h
 import 'package:mytest_project/features/signals/presentation/pages/signals_page.dart';
 import 'package:mytest_project/features/risk_settings/presentation/pages/risk_settings_page.dart';
 import 'package:mytest_project/features/guardian/presentation/pages/guardian_page.dart';
+import 'package:mytest_project/features/dashboard/presentation/widgets/auto_trading_card.dart';
+import 'package:mytest_project/features/auto_trading/presentation/bloc/auto_trading_bloc.dart';
+import 'package:mytest_project/features/auto_trading/presentation/pages/auto_trading_settings_page.dart';
 
 class DashboardPage extends StatelessWidget {
   final String name;
@@ -29,11 +32,34 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
+  void _openAutoTradingSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (_) =>
+              serviceLocator<AutoTradingBloc>()
+                ..add(const AutoTradingLoadRequested()),
+          child: const AutoTradingSettingsPage(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) =>
-          serviceLocator<DashboardBloc>()..add(DashboardLoadRequested()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<DashboardBloc>(
+          create: (_) =>
+              serviceLocator<DashboardBloc>()..add(DashboardLoadRequested()),
+        ),
+        BlocProvider<AutoTradingBloc>(
+          create: (_) =>
+              serviceLocator<AutoTradingBloc>()
+                ..add(const AutoTradingLoadRequested()),
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -50,7 +76,6 @@ class DashboardPage extends StatelessWidget {
             const SizedBox(width: 8),
           ],
         ),
-
         // ==================================================================
         // DASHBOARD BLOC
         // ==================================================================
@@ -102,6 +127,7 @@ class DashboardPage extends StatelessWidget {
               if (state is DashboardLoaded) {
                 final stats = state.dashboard.stats;
                 final risk = state.dashboard.risk;
+                final latestSignal = state.dashboard.latestSignal;
 
                 return RefreshIndicator(
                   onRefresh: () async {
@@ -160,8 +186,7 @@ class DashboardPage extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 12),
-
-                        const LatestSignalCard(),
+                        LatestSignalCard(signal: latestSignal),
 
                         const SizedBox(height: 16),
 
@@ -306,6 +331,64 @@ class DashboardPage extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 32),
+
+                        // ==================================================
+                        // AUTO TRADING
+                        // ==================================================
+                        const SectionHeader(
+                          title: 'Auto Trading',
+                          icon: Icons.smart_toy_outlined,
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        BlocBuilder<AutoTradingBloc, AutoTradingState>(
+                          builder: (context, state) {
+                            if (state is AutoTradingLoaded) {
+                              return GestureDetector(
+                                onTap: () => _openAutoTradingSettings(context),
+                                child: AutoTradingCard(
+                                  enabled: state.settings.enabled,
+                                  onChanged: (enabled) {
+                                    context.read<AutoTradingBloc>().add(
+                                      AutoTradingChanged(enabled),
+                                    );
+                                  },
+                                ),
+                              );
+                            }
+
+                            if (state is AutoTradingUpdating) {
+                              return AutoTradingCard(
+                                enabled: state.settings.enabled,
+                                onChanged: (_) {},
+                              );
+                            }
+
+                            if (state is AutoTradingFailure) {
+                              final settings = state.previousSettings;
+
+                              if (settings != null) {
+                                return GestureDetector(
+                                  onTap: () =>
+                                      _openAutoTradingSettings(context),
+                                  child: AutoTradingCard(
+                                    enabled: settings.enabled,
+                                    onChanged: (enabled) {
+                                      context.read<AutoTradingBloc>().add(
+                                        AutoTradingChanged(enabled),
+                                      );
+                                    },
+                                  ),
+                                );
+                              }
+                            }
+
+                            return const SizedBox.shrink();
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
 
                         // ==================================================
                         // QUICK ACTIONS

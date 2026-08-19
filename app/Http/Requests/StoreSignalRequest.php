@@ -19,10 +19,11 @@ class StoreSignalRequest extends FormRequest
      */
     public function rules(): array
     {
-             return [
+        return [
+
             'symbol_id' => [
-            'required',
-            'exists:symbols,id',
+                'required',
+                'exists:symbols,id',
             ],
 
             'direction' => [
@@ -42,6 +43,16 @@ class StoreSignalRequest extends FormRequest
 
             'take_profit' => [
                 'required',
+                'numeric',
+            ],
+
+            'take_profit_2' => [
+                'nullable',
+                'numeric',
+            ],
+
+            'take_profit_3' => [
+                'nullable',
                 'numeric',
             ],
 
@@ -69,6 +80,39 @@ class StoreSignalRequest extends FormRequest
                 'max:100',
             ],
 
+            'risk_reward' => [
+                'nullable',
+                'numeric',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Analysis & AI
+            |--------------------------------------------------------------------------
+            */
+
+            'analysis' => [
+                'nullable',
+                'string',
+            ],
+
+            'ai_score' => [
+                'nullable',
+                'numeric',
+                'between:0,100',
+            ],
+
+            'ai_comment' => [
+                'nullable',
+                'string',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Confluences
+            |--------------------------------------------------------------------------
+            */
+
             'confluences' => [
                 'nullable',
                 'array',
@@ -79,6 +123,12 @@ class StoreSignalRequest extends FormRequest
                 'max:100',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Chart
+            |--------------------------------------------------------------------------
+            */
+
             'chart_image' => [
                 'nullable',
                 'image',
@@ -86,9 +136,26 @@ class StoreSignalRequest extends FormRequest
                 'max:4096',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Status
+            |--------------------------------------------------------------------------
+            */
+
             'status' => [
                 'nullable',
-                'in:Draft,Pending,Published,Expired,Cancelled',
+                'in:Draft,Approved,Published,Running,Closed,Rejected,Cancelled,Expired',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Visibility
+            |--------------------------------------------------------------------------
+            */
+
+            'visibility' => [
+                'required',
+                'in:free,premium,pro',
             ],
         ];
     }
@@ -99,6 +166,7 @@ class StoreSignalRequest extends FormRequest
     public function messages(): array
     {
         return [
+
             'direction.in' =>
                 'Direction must be BUY or SELL.',
 
@@ -108,6 +176,9 @@ class StoreSignalRequest extends FormRequest
             'overall_confidence.between' =>
                 'Overall Confidence must be between 0 and 100.',
 
+            'ai_score.between' =>
+                'AI Score must be between 0 and 100.',
+
             'chart_image.image' =>
                 'Chart image must be a valid image.',
 
@@ -116,4 +187,3 @@ class StoreSignalRequest extends FormRequest
         ];
     }
 }
-

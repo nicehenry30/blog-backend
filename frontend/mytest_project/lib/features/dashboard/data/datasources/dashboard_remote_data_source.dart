@@ -12,8 +12,7 @@ abstract interface class DashboardRemoteDataSource {
 }
 
 class DashboardRemoteDataSourceImpl
-    implements DashboardRemoteDataSource {
-  final http.Client client;
+    implements DashboardRemoteDataSource {final http.Client client;
   final LocalStorage localStorage;
 
   DashboardRemoteDataSourceImpl(

@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('plans', function (Blueprint $table) {
-
             $table->id();
 
             $table->string('name');
@@ -27,8 +26,9 @@ return new class extends Migration
 
             $table->enum('billing_cycle', [
                 'monthly',
+                'three_months',
                 'yearly',
-                'lifetime',
+                'two_year',
             ]);
 
             $table->boolean('is_active')->default(true);

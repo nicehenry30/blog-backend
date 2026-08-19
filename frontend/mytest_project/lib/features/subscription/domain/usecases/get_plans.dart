@@ -9,7 +9,7 @@ class GetPlans {
 
   GetPlans(this.repository);
 
-  Future<Either<Failure, List<Plan>>> call() async {
+  Future<Either<Failure, List<Plan>>> call() {
     return repository.getPlans();
   }
 }

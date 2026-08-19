@@ -19,11 +19,12 @@ class SubscriptionRemoteDataSourceImpl
     this.localStorage,
   );
 
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl =
+      'http://127.0.0.1:8000/api';
 
   @override
   Future<List<PlanModel>> getPlans() async {
-    final token = localStorage.getToken();
+   final token = localStorage.getToken();
 
     final response = await client.get(
       Uri.parse('$baseUrl/plans'),
@@ -39,18 +40,25 @@ class SubscriptionRemoteDataSourceImpl
       final List<dynamic> plans = data['data'];
 
       return plans
-          .map((e) => PlanModel.fromJson(e))
+          .map(
+            (e) => PlanModel.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
           .toList();
     }
 
     throw ServerException(
-      message: data['message'] ?? 'Failed to load plans',
+      message:
+          data['message'] ??
+          'Failed to load plans',
     );
   }
 
   @override
-  Future<SubscriptionModel> getCurrentSubscription() async {
-    final token = localStorage.getToken();
+  Future<SubscriptionModel>
+      getCurrentSubscription() async {
+   final token = localStorage.getToken();
 
     final response = await client.get(
       Uri.parse('$baseUrl/subscription'),
@@ -70,7 +78,8 @@ class SubscriptionRemoteDataSourceImpl
 
     throw ServerException(
       message:
-          data['message'] ?? 'Failed to load subscription',
+          data['message'] ??
+          'Failed to load subscription',
     );
   }
 
@@ -81,9 +90,12 @@ class SubscriptionRemoteDataSourceImpl
     final token = localStorage.getToken();
 
     final response = await client.post(
-      Uri.parse('$baseUrl/payments/initialize'),
+      Uri.parse(
+        '$baseUrl/payments/initialize',
+      ),
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':
+            'application/json',
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
@@ -95,13 +107,50 @@ class SubscriptionRemoteDataSourceImpl
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      return data['data']['authorization_url'];
+      return data['data']
+          ['authorization_url'];
     }
 
     throw ServerException(
       message:
           data['message'] ??
           'Failed to initialize payment',
+    );
+  }
+
+  @override
+  Future<SubscriptionModel> verifyPayment(
+    String reference,
+  ) async {
+    final token = localStorage.getToken();
+
+    final response = await client.post(
+      Uri.parse(
+        '$baseUrl/payments/verify',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'reference': reference,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return SubscriptionModel.fromJson(
+        data['subscription'],
+      );
+    }
+
+    throw ServerException(
+      message:
+          data['message'] ??
+          'Payment verification failed',
     );
   }
 }

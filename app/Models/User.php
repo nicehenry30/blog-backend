@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Services\SubscriptionService;
+
 
 class User extends Authenticatable
 {
@@ -51,7 +53,10 @@ class User extends Authenticatable
  */
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class);
+        return $this->hasOne(Subscription::class)
+        ->where('status', 'active')
+        ->where('expires_at', '>', now())
+        ->latestOfMany();
     }
 
     /**
@@ -67,8 +72,7 @@ class User extends Authenticatable
      */
     public function hasActiveSubscription(): bool
     {
-        return app(SubscriptionService::class)
-            ->hasActiveSubscription($this);
+          return $this->activeSubscription()->exists();
     }
 
     /**
@@ -78,5 +82,13 @@ class User extends Authenticatable
     {
         return app(SubscriptionService::class)
             ->hasFeature($this, $feature);
+    }
+
+    /**
+    * User settings.
+    */
+    public function settings(): HasOne
+    {
+        return $this->hasOne(UserSetting::class);
     }
 }

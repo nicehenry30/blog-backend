@@ -20,6 +20,7 @@ class UpdateSignalRequest extends FormRequest
     public function rules(): array
     {
         return [
+
             'symbol' => [
                 'sometimes',
                 'string',
@@ -46,6 +47,18 @@ class UpdateSignalRequest extends FormRequest
                 'numeric',
             ],
 
+            'take_profit_2' => [
+                'sometimes',
+                'nullable',
+                'numeric',
+            ],
+
+            'take_profit_3' => [
+                'sometimes',
+                'nullable',
+                'numeric',
+            ],
+
             'timeframe' => [
                 'sometimes',
                 'string',
@@ -65,12 +78,45 @@ class UpdateSignalRequest extends FormRequest
             ],
 
             'strategy' => [
+                'sometimes',
                 'nullable',
                 'string',
                 'max:100',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Analysis & AI
+            |--------------------------------------------------------------------------
+            */
+
+            'analysis' => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
+
+            'ai_score' => [
+                'sometimes',
+                'nullable',
+                'numeric',
+                'between:0,100',
+            ],
+
+            'ai_comment' => [
+                'sometimes',
+                'nullable',
+                'string',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Confluences
+            |--------------------------------------------------------------------------
+            */
+
             'confluences' => [
+                'sometimes',
                 'nullable',
                 'array',
             ],
@@ -80,6 +126,12 @@ class UpdateSignalRequest extends FormRequest
                 'max:100',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Chart
+            |--------------------------------------------------------------------------
+            */
+
             'chart_image' => [
                 'nullable',
                 'image',
@@ -87,9 +139,26 @@ class UpdateSignalRequest extends FormRequest
                 'max:4096',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Status
+            |--------------------------------------------------------------------------
+            */
+
             'status' => [
                 'sometimes',
-                'in:Draft,Pending,Published,Expired,Cancelled',
+                'in:Draft,Approved,Published,Running,Closed,Rejected,Cancelled,Expired',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Visibility
+            |--------------------------------------------------------------------------
+            */
+
+            'visibility' => [
+                'sometimes',
+                'in:free,premium,pro',
             ],
         ];
     }
@@ -100,6 +169,7 @@ class UpdateSignalRequest extends FormRequest
     public function messages(): array
     {
         return [
+
             'direction.in' =>
                 'Direction must be BUY or SELL.',
 
@@ -109,6 +179,9 @@ class UpdateSignalRequest extends FormRequest
             'overall_confidence.between' =>
                 'Overall Confidence must be between 0 and 100.',
 
+            'ai_score.between' =>
+                'AI Score must be between 0 and 100.',
+
             'chart_image.image' =>
                 'Chart image must be a valid image.',
 
@@ -117,4 +190,3 @@ class UpdateSignalRequest extends FormRequest
         ];
     }
 }
-

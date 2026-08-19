@@ -50,9 +50,9 @@ class StorePlanRequest extends FormRequest
                 'max:10',
             ],
 
-            'billing_cycle' => [
-                'required',
-                'in:monthly,yearly,lifetime',
+           'billing_cycle' => [
+            'required',
+            'in:monthly,three_months,yearly,two_year',
             ],
 
             'is_active' => [

@@ -9,4 +9,9 @@ abstract interface class SubscriptionRemoteDataSource {
   Future<String> initializePayment(
     int planId,
   );
+
+  // NEW
+  Future<SubscriptionModel> verifyPayment(
+    String reference,
+  );
 }

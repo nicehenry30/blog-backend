@@ -142,8 +142,56 @@ import 'package:mytest_project/features/subscription/domain/repositories/subscri
 import 'package:mytest_project/features/subscription/domain/usecases/get_plans.dart';
 import 'package:mytest_project/features/subscription/domain/usecases/get_current_subscription.dart';
 import 'package:mytest_project/features/subscription/domain/usecases/initialize_payment.dart';
+import 'package:mytest_project/features/subscription/domain/usecases/verify_payment.dart';
 
 import 'package:mytest_project/features/subscription/presentation/bloc/subscription_bloc.dart';
+
+// ============================================================================
+// PAYMENTS FEATURE
+// ============================================================================
+
+import 'package:mytest_project/features/payments/data/datasources/payment_remote_data_source.dart';
+import 'package:mytest_project/features/payments/data/datasources/payment_remote_data_source_impl.dart';
+
+import 'package:mytest_project/features/payments/data/repositories/payment_repository_impl.dart';
+
+import 'package:mytest_project/features/payments/domain/repositories/payment_repository.dart';
+
+import 'package:mytest_project/features/payments/domain/usecases/get_payment.dart';
+import 'package:mytest_project/features/payments/domain/usecases/get_payments.dart';
+
+import 'package:mytest_project/features/payments/presentation/bloc/payment_bloc.dart';
+
+import 'package:mytest_project/features/market_alerts/data/datasources/market_alert_remote_data_source.dart';
+import 'package:mytest_project/features/market_alerts/data/datasources/market_alert_remote_data_source_impl.dart';
+import 'package:mytest_project/features/market_alerts/data/repositories/market_alert_repository_impl.dart';
+import 'package:mytest_project/features/market_alerts/domain/repositories/market_alert_repository.dart';
+import 'package:mytest_project/features/market_alerts/domain/usecases/get_market_alerts.dart';
+import 'package:mytest_project/features/market_alerts/presentation/bloc/market_alert_bloc.dart';
+
+import 'package:mytest_project/features/education/data/repository/education_repository_impl.dart';
+import 'package:mytest_project/features/education/domain/repository/education_repository.dart';
+
+// ============================================================================
+// NOTIFICATIONS FEATURE
+// ============================================================================
+
+import 'package:mytest_project/core/notifications/push_notification_service.dart';
+
+import 'package:mytest_project/features/notifications/data/datasources/notification_remote_data_source.dart';
+import 'package:mytest_project/features/notifications/data/repository/notification_repository_impl.dart';
+
+import 'package:mytest_project/features/notifications/domain/repository/notification_repository.dart';
+import 'package:mytest_project/features/notifications/domain/usecases/register_device_token.dart';
+
+import 'package:mytest_project/features/auto_trading/data/datasources/auto_trading_remote_data_source.dart';
+import 'package:mytest_project/features/auto_trading/data/repository/auto_trading_repository_impl.dart';
+import 'package:mytest_project/features/auto_trading/domain/repository/auto_trading_repository.dart';
+import 'package:mytest_project/features/auto_trading/domain/usecases/get_auto_trading_status.dart';
+import 'package:mytest_project/features/auto_trading/domain/usecases/update_auto_trading.dart';
+import 'package:mytest_project/features/auto_trading/presentation/bloc/auto_trading_bloc.dart';
+import 'package:mytest_project/features/auto_trading/domain/usecases/update_auto_trading_preferences.dart';
+
 // ============================================================================
 // SERVICE LOCATOR
 // ============================================================================
@@ -400,6 +448,52 @@ Future<void> initDependencies() async {
   );
 
   // ==========================================================================
+  // NOTIFICATIONS FEATURE
+  // ==========================================================================
+
+    // ==========================================================================
+  // NOTIFICATIONS FEATURE
+  // ==========================================================================
+
+  // --------------------------------------------------------------------------
+  // Notification Remote Data Source
+  // --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSourceImpl(
+      serviceLocator<http.Client>(),
+      serviceLocator<LocalStorage>(),
+    ),
+  );
+
+  // --------------------------------------------------------------------------
+  // Notification Repository
+  // --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepositoryImpl(
+      serviceLocator<NotificationRemoteDataSource>(),
+    ),
+  );
+
+  // --------------------------------------------------------------------------
+  // Notification Use Cases
+  // --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<RegisterDeviceToken>(
+    () => RegisterDeviceToken(
+      serviceLocator<NotificationRepository>(),
+    ),
+  );
+
+  // --------------------------------------------------------------------------
+  // Push Notification Service
+  // --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(),
+  );
+// ==========================================================================
 // GUARDIAN FEATURE
 // ==========================================================================
 
@@ -469,12 +563,22 @@ serviceLocator.registerFactory<GuardianBloc>(
 // --------------------------------------------------------------------------
 
 serviceLocator.registerLazySingleton<EducationRemoteDataSource>(
-  () => EducationRemoteDataSourceImpl(),
+  () => EducationRemoteDataSourceImpl(
+    serviceLocator(),
+    serviceLocator(),
+  ),
 );
 
 // --------------------------------------------------------------------------
-// Education Use Cases
+// Education Remote Data Source
 // --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<EducationRepository>(
+  () => EducationRepositoryImpl(
+    serviceLocator(),
+  ),
+);
+
 
 serviceLocator.registerLazySingleton<GetCourses>(
   () => GetCourses(
@@ -510,9 +614,11 @@ serviceLocator.registerLazySingleton<UpdateProgress>(
 // Education BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<EducationBloc>(
+serviceLocator.registerFactory(
   () => EducationBloc(
     getCourses: serviceLocator(),
+    getCourseDetails: serviceLocator(),
+    getLessons: serviceLocator(),
   ),
 );
 
@@ -669,15 +775,151 @@ serviceLocator.registerLazySingleton<InitializePayment>(
   ),
 );
 
+serviceLocator.registerLazySingleton<VerifyPayment>(
+  () => VerifyPayment(
+    serviceLocator(),
+  ),
+);
+
+
 // --------------------------------------------------------------------------
 // Subscription BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<SubscriptionBloc>(
+  serviceLocator.registerFactory<SubscriptionBloc>(
   () => SubscriptionBloc(
     getPlans: serviceLocator(),
     getCurrentSubscription: serviceLocator(),
     initializePayment: serviceLocator(),
+    verifyPayment: serviceLocator(),
     ),
   );
+
+  // ==========================================================================
+// PAYMENTS FEATURE
+// ==========================================================================
+
+// --------------------------------------------------------------------------
+// Payment Remote Data Source
+// --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<PaymentRemoteDataSource>(
+  () => PaymentRemoteDataSourceImpl(
+    serviceLocator(),
+    serviceLocator(),
+  ),
+);
+
+// --------------------------------------------------------------------------
+// Payment Repository
+// --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<PaymentRepository>(
+  () => PaymentRepositoryImpl(
+    serviceLocator(),
+  ),
+);
+
+// --------------------------------------------------------------------------
+// Payment Use Cases
+// --------------------------------------------------------------------------
+
+serviceLocator.registerLazySingleton<GetPayments>(
+  () => GetPayments(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<GetPayment>(
+  () => GetPayment(
+    serviceLocator(),
+  ),
+);
+
+// --------------------------------------------------------------------------
+// Payment Bloc
+// --------------------------------------------------------------------------
+
+serviceLocator.registerFactory<PaymentBloc>(
+  () => PaymentBloc(
+    getPayments: serviceLocator(),
+    getPayment: serviceLocator(),
+  ),
+);
+
+// ============================================================
+// MARKET ALERTS
+// ============================================================
+
+serviceLocator.registerLazySingleton<
+    MarketAlertRemoteDataSource>(
+  () => MarketAlertRemoteDataSourceImpl(
+    serviceLocator(),
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<
+    MarketAlertRepository>(
+  () => MarketAlertRepositoryImpl(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton(
+  () => GetMarketAlerts(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerFactory(
+  () => MarketAlertBloc(
+    getMarketAlerts: serviceLocator(),
+  ),
+);
+
+// ==================================================
+// AUTO TRADING
+// ==================================================
+
+serviceLocator.registerLazySingleton<
+    AutoTradingRemoteDataSource>(
+  () => AutoTradingRemoteDataSourceImpl(
+    serviceLocator(),
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<AutoTradingRepository>(
+  () => AutoTradingRepositoryImpl(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton(
+  () => GetAutoTradingStatus(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton(
+  () => UpdateAutoTrading(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton(
+  () => UpdateAutoTradingPreferences(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerFactory(
+  () => AutoTradingBloc(
+    getAutoTradingStatus: serviceLocator(),
+    updateAutoTrading: serviceLocator(),
+    updateAutoTradingPreferences: serviceLocator(),
+  ),
+);
+
 }

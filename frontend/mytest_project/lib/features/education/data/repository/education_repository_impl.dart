@@ -23,7 +23,9 @@ class EducationRepositoryImpl implements EducationRepository {
 
       return Right(courses);
     } catch (e) {
-      return Left(Failure(e.toString()));
+      return Left(
+        Failure(e.toString()),
+      );
     }
   }
 
@@ -37,7 +39,9 @@ class EducationRepositoryImpl implements EducationRepository {
 
       return Right(course);
     } catch (e) {
-      return Left(Failure(e.toString()));
+      return Left(
+        Failure(e.toString()),
+      );
     }
   }
 
@@ -51,7 +55,9 @@ class EducationRepositoryImpl implements EducationRepository {
 
       return Right(lessons);
     } catch (e) {
-      return Left(Failure(e.toString()));
+      return Left(
+        Failure(e.toString()),
+      );
     }
   }
 
@@ -65,7 +71,9 @@ class EducationRepositoryImpl implements EducationRepository {
 
       return Right(progress);
     } catch (e) {
-      return Left(Failure(e.toString()));
+      return Left(
+        Failure(e.toString()),
+      );
     }
   }
 
@@ -78,7 +86,9 @@ class EducationRepositoryImpl implements EducationRepository {
 
       return const Right(null);
     } catch (e) {
-      return Left(Failure(e.toString()));
+      return Left(
+        Failure(e.toString()),
+      );
     }
   }
 }

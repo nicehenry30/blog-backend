@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'payment_webview_page.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../bloc/subscription_bloc.dart';
+import '../widgets/current_subscription_card.dart';
+import '../widgets/plan_card.dart';
 
 class SubscriptionPage extends StatelessWidget {
   const SubscriptionPage({super.key});
@@ -12,7 +14,8 @@ class SubscriptionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          serviceLocator<SubscriptionBloc>()..add(LoadSubscription()),
+          serviceLocator<SubscriptionBloc>()
+            ..add(LoadSubscription()),
       child: const _SubscriptionView(),
     );
   }
@@ -26,28 +29,36 @@ class _SubscriptionView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Subscription'),
+        centerTitle: true,
       ),
       body: BlocConsumer<SubscriptionBloc, SubscriptionState>(
-       listener: (context, state) {
-  if (state is SubscriptionPaymentReady) {
-    final uri = Uri.parse(state.authorizationUrl);
-
-    launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    ).then((opened) {
-      if (!opened && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Could not open payment page.',
+      listener: (context, state) async {
+      if (state is SubscriptionPaymentReady) {
+        final verified =
+            await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value:
+                  context.read<SubscriptionBloc>(),
+              child: PaymentWebViewPage(
+                paymentUrl:
+                    state.authorizationUrl,
+              ),
             ),
           ),
         );
+
+        if (verified == true &&
+            context.mounted) {
+          context
+              .read<SubscriptionBloc>()
+              .add(
+                LoadSubscription(),
+              );
+        }
       }
-    });
-  }
-},
+    },
         builder: (context, state) {
           if (state is SubscriptionLoading) {
             return const Center(
@@ -65,111 +76,48 @@ class _SubscriptionView extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Current Subscription',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        Text(
-                          state.currentSubscription == null
-                              ? 'FREE PLAN'
-                              : state.currentSubscription!.plan.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                          ),
-                        ),
-
-                        if (state.currentSubscription != null)
-                          Text(
-                            'Status: ${state.currentSubscription!.status}',
-                          ),
-                      ],
-                    ),
-                  ),
+                CurrentSubscriptionCard(
+                  subscription:
+                      state.currentSubscription,
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 const Text(
                   'Available Plans',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
                     fontSize: 22,
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
                 ...state.plans.map(
-                  (plan) => Card(
-                    margin:
-                        const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            plan.name,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
-                          ),
+                  (plan) {
+                    final isCurrentPlan =
+                        state.currentSubscription
+                                ?.plan
+                                .id ==
+                            plan.id;
 
-                          const SizedBox(height: 8),
-
-                          Text(plan.description),
-
-                          const SizedBox(height: 12),
-
-                          Text(
-                            '${plan.currency} ${plan.price}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight:
-                                  FontWeight.bold,
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                context
-                                    .read<SubscriptionBloc>()
-                                    .add(
-                                      InitializeSubscriptionPayment(
-                                        plan.id,
-                                      ),
-                                    );
-                              },
-                              child: const Text(
-                                'Upgrade',
+                    return PlanCard(
+                      plan: plan,
+                      isCurrentPlan:
+                          isCurrentPlan,
+                      onPressed: () {
+                        context
+                            .read<
+                                SubscriptionBloc>()
+                            .add(
+                              InitializeSubscriptionPayment(
+                                plan.id,
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                            );
+                      },
+                    );
+                  },
                 ),
               ],
             );

@@ -8,9 +8,17 @@ import '../entities/subscription.dart';
 abstract interface class SubscriptionRepository {
   Future<Either<Failure, List<Plan>>> getPlans();
 
-  Future<Either<Failure, Subscription>> getCurrentSubscription();
+  Future<Either<Failure, Subscription>>
+      getCurrentSubscription();
 
-  Future<Either<Failure, String>> initializePayment(
+  Future<Either<Failure, String>>
+      initializePayment(
     int planId,
+  );
+
+  // 👇 NEW METHOD
+  Future<Either<Failure, Subscription>>
+      verifyPayment(
+    String reference,
   );
 }

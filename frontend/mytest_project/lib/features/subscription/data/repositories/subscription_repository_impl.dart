@@ -1,7 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
-import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/error/failures.dart';
 
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
@@ -20,7 +20,8 @@ class SubscriptionRepositoryImpl
   @override
   Future<Either<Failure, List<Plan>>> getPlans() async {
     try {
-      final result = await remoteDataSource.getPlans();
+      final result =
+          await remoteDataSource.getPlans();
 
       return right(result);
     } on ServerException catch (e) {
@@ -35,7 +36,8 @@ class SubscriptionRepositoryImpl
       getCurrentSubscription() async {
     try {
       final result =
-          await remoteDataSource.getCurrentSubscription();
+          await remoteDataSource
+              .getCurrentSubscription();
 
       return right(result);
     } on ServerException catch (e) {
@@ -52,9 +54,26 @@ class SubscriptionRepositoryImpl
   ) async {
     try {
       final result =
-          await remoteDataSource.initializePayment(
-        planId,
+          await remoteDataSource
+              .initializePayment(planId);
+
+      return right(result);
+    } on ServerException catch (e) {
+      return left(
+        Failure(e.message),
       );
+    }
+  }
+
+  @override
+  Future<Either<Failure, Subscription>>
+      verifyPayment(
+    String reference,
+  ) async {
+    try {
+      final result =
+          await remoteDataSource
+              .verifyPayment(reference);
 
       return right(result);
     } on ServerException catch (e) {

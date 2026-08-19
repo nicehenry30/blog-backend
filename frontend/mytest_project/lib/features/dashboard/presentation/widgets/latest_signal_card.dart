@@ -1,15 +1,56 @@
 import 'package:flutter/material.dart';
 
+import 'package:mytest_project/features/dashboard/domain/entities/latest_dashboard_signal.dart';
 import 'package:mytest_project/features/dashboard/presentation/widgets/signal_value.dart';
 
 class LatestSignalCard extends StatelessWidget {
-  const LatestSignalCard({
-    super.key,
-  });
+  final LatestDashboardSignal? signal;
+
+  const LatestSignalCard({super.key, this.signal});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // ==============================================================
+    // NO SIGNAL
+    // ==============================================================
+
+    if (signal == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.18),
+          ),
+        ),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No active trading signal available.'),
+          ),
+        ),
+      );
+    }
+
+    // ==============================================================
+    // DIRECTION
+    // ==============================================================
+
+    final bool isBuy = signal!.direction.toUpperCase() == 'BUY';
+
+    final Color directionColor = isBuy ? Colors.green : Colors.red;
+
+    final IconData directionIcon = isBuy
+        ? Icons.arrow_upward_rounded
+        : Icons.arrow_downward_rounded;
+
+    // ==============================================================
+    // CARD
+    // ==============================================================
 
     return Container(
       width: double.infinity,
@@ -18,30 +59,33 @@ class LatestSignalCard extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(
-            alpha: 0.18,
-          ),
+          color: theme.colorScheme.outline.withValues(alpha: 0.18),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ==========================================================
+          // SYMBOL + DIRECTION
+          // ==========================================================
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'XAUUSD',
-                    style: TextStyle(
+                  Text(
+                    signal!.symbol,
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 3),
+
                   Text(
-                    'Gold / US Dollar',
+                    '${signal!.strategy} • ${signal!.timeframe}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(
                         alpha: 0.55,
@@ -50,30 +94,27 @@ class LatestSignalCard extends StatelessWidget {
                   ),
                 ],
               ),
+
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(
-                    alpha: 0.10,
-                  ),
+                  color: directionColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.arrow_upward_rounded,
-                      color: Colors.green,
-                      size: 16,
-                    ),
-                    SizedBox(width: 4),
+                    Icon(directionIcon, color: directionColor, size: 16),
+
+                    const SizedBox(width: 4),
+
                     Text(
-                      'BUY',
+                      signal!.direction,
                       style: TextStyle(
-                        color: Colors.green,
+                        color: directionColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -85,34 +126,76 @@ class LatestSignalCard extends StatelessWidget {
 
           const SizedBox(height: 22),
 
-          const Row(
+          // ==========================================================
+          // ENTRY / STOP LOSS / TAKE PROFIT
+          // ==========================================================
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               SignalValue(
                 title: 'Entry',
-                value: '3,350.00',
+                value: signal!.entryPrice.toStringAsFixed(2),
               ),
+
               SignalValue(
                 title: 'Stop Loss',
-                value: '3,335.00',
+                value: signal!.stopLoss.toStringAsFixed(2),
               ),
+
               SignalValue(
                 title: 'Take Profit',
-                value: '3,390.00',
+                value: signal!.takeProfit.toStringAsFixed(2),
               ),
             ],
           ),
 
           const SizedBox(height: 20),
 
-          Divider(
-            color: theme.colorScheme.outline.withValues(
-              alpha: 0.15,
-            ),
-          ),
+          Divider(color: theme.colorScheme.outline.withValues(alpha: 0.15)),
 
           const SizedBox(height: 14),
 
+          // ==========================================================
+          // SIGNAL STATUS
+          // ==========================================================
+          Row(
+            children: [
+              Icon(
+                Icons.radio_button_checked,
+                size: 18,
+                color: signal!.status.toUpperCase() == 'RUNNING'
+                    ? Colors.green
+                    : theme.colorScheme.primary,
+              ),
+
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: Text(
+                  'Signal Status',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              Text(
+                signal!.status,
+                style: TextStyle(
+                  color: signal!.status.toUpperCase() == 'RUNNING'
+                      ? Colors.green
+                      : theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // ==========================================================
+          // STRATEGY
+          // ==========================================================
           Row(
             children: [
               Icon(
@@ -120,17 +203,20 @@ class LatestSignalCard extends StatelessWidget {
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
+
               const SizedBox(width: 8),
+
               Expanded(
                 child: Text(
-                  'AI Confirmation',
+                  'Trading Strategy',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
+
               Text(
-                '85/100',
+                signal!.strategy,
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -141,26 +227,15 @@ class LatestSignalCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: LinearProgressIndicator(
-              value: 0.85,
-              minHeight: 7,
-              backgroundColor: theme.colorScheme.primary.withValues(
-                alpha: 0.10,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          const Align(
+          // ==========================================================
+          // TIMEFRAME
+          // ==========================================================
+          Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'Strong Setup',
-              style: TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
+              'Timeframe: ${signal!.timeframe}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
               ),
             ),
           ),

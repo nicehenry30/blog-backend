@@ -26,15 +26,17 @@ class SignalController extends Controller
     public function index()
     {
         $signals = Signal::with([
-            'symbol',
-            'creator',
-            'approver',
-            'histories',
-        ])
-            ->where('status', 'Published')
-            ->latest()
-            ->get();
-
+    'symbol',
+    'creator',
+    'approver',
+    'histories',
+    ])
+   ->whereIn('status', [
+    Signal::STATUS_PUBLISHED,
+    Signal::STATUS_RUNNING,
+    ])
+    ->latest()
+    ->get();
         return SignalResource::collection($signals);
     }
 
@@ -95,8 +97,7 @@ class SignalController extends Controller
             $request->validated()
         );
 
-        return new SignalResource(
-            $signal->fresh()->load([
+        return new SignalResource($signal->fresh()->load([
                 'symbol',
                 'creator',
                 'approver',

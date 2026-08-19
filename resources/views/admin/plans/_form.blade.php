@@ -93,26 +93,39 @@
                 Billing Cycle
             </label>
 
-            <select
-                name="billing_cycle"
-                class="w-full border rounded-lg px-4 py-3"
+         <select
+            name="billing_cycle"
+            class="w-full border rounded-lg px-4 py-3"
+            required
+        >
+            <option
+                value="monthly"
+                @selected(old('billing_cycle', $plan->billing_cycle ?? '') === 'monthly')
             >
-                <option value="monthly"
-                    @selected(old('billing_cycle', $plan->billing_cycle ?? '') == 'monthly')>
-                    Monthly
-                </option>
+                1 Month
+            </option>
 
-                <option value="yearly"
-                    @selected(old('billing_cycle', $plan->billing_cycle ?? '') == 'yearly')>
-                    Yearly
-                </option>
+            <option
+                value="three_months"
+                @selected(old('billing_cycle', $plan->billing_cycle ?? '') === 'three_months')
+            >
+                3 Months
+            </option>
 
-                <option value="lifetime"
-                    @selected(old('billing_cycle', $plan->billing_cycle ?? '') == 'lifetime')>
-                    Lifetime
-                </option>
-            </select>
+            <option
+                value="yearly"
+                @selected(old('billing_cycle', $plan->billing_cycle ?? '') === 'yearly')
+            >
+                1 Year
+            </option>
 
+            <option
+                value="two_year"
+                @selected(old('billing_cycle', $plan->billing_cycle ?? '') === 'two_year')
+            >
+                2 Years
+            </option>
+        </select>
         </div>
 
         <div>

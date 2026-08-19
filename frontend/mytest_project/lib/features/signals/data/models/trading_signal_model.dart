@@ -1,4 +1,5 @@
 import '../../domain/entities/trading_signal.dart';
+import 'signal_history_model.dart';
 
 class TradingSignalModel extends TradingSignal {
   const TradingSignalModel({
@@ -9,27 +10,54 @@ class TradingSignalModel extends TradingSignal {
     required super.assetType,
     required super.brokerSymbol,
     required super.digits,
+
+    super.analysis,
+    super.aiScore,
+    super.aiComment,
+
     required super.direction,
+
     required super.entryPrice,
     required super.stopLoss,
     required super.takeProfit,
+
+    super.takeProfit2,
+    super.takeProfit3,
+
     required super.timeframe,
+
     required super.signalQuality,
     required super.overallConfidence,
+
     super.strategy,
+
     required super.confluences,
+
     super.chartImage,
     super.chartImageUrl,
+
     required super.createdAt,
     super.publishedAt,
+
     required super.status,
+
+    required super.visibility,
+    required super.locked,
+    required super.canView,
+    super.upgradePlan,
+
+    required super.histories,
   });
 
-  factory TradingSignalModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    final symbol =
-        json['symbol'] as Map<String, dynamic>;
+  factory TradingSignalModel.fromJson(Map<String, dynamic> json) {
+    final symbol = json['symbol'] as Map<String, dynamic>;
+
+    final histories = (json['histories'] as List? ?? [])
+        .map(
+          (history) =>
+              SignalHistoryModel.fromJson(history as Map<String, dynamic>),
+        )
+        .toList();
 
     return TradingSignalModel(
       id: json['id'],
@@ -42,101 +70,65 @@ class TradingSignalModel extends TradingSignal {
 
       assetType: symbol['asset_type'],
 
-      brokerSymbol: symbol['broker_symbol'],
+      brokerSymbol: symbol['broker_symbol'] ?? symbol['symbol'] ?? '',
 
       digits: symbol['digits'],
 
-      direction: json['direction'],
+      analysis: json['analysis'],
 
-      entryPrice:
-          (json['entry_price'] as num).toDouble(),
+      aiScore: json['ai_score'] != null
+          ? (json['ai_score'] as num).toDouble()
+          : null,
 
-      stopLoss:
-          (json['stop_loss'] as num).toDouble(),
+      aiComment: json['ai_comment'],
 
-      takeProfit:
-          (json['take_profit'] as num).toDouble(),
+      direction: json['direction'] ?? '',
 
-      timeframe: json['timeframe'],
+      entryPrice: (json['entry_price'] as num).toDouble(),
 
-      signalQuality:
-          (json['signal_quality'] as num)
-              .toDouble(),
+      stopLoss: (json['stop_loss'] as num).toDouble(),
 
-      overallConfidence:
-          (json['overall_confidence'] as num)
-              .toDouble(),
+      takeProfit: (json['take_profit'] as num).toDouble(),
+
+      takeProfit2: json['take_profit_2'] != null
+          ? (json['take_profit_2'] as num).toDouble()
+          : null,
+
+      takeProfit3: json['take_profit_3'] != null
+          ? (json['take_profit_3'] as num).toDouble()
+          : null,
+
+      timeframe: json['timeframe'] ?? '',
+
+      signalQuality: (json['signal_quality'] as num).toDouble(),
+
+      overallConfidence: (json['overall_confidence'] as num).toDouble(),
 
       strategy: json['strategy'],
 
-      confluences:
-          List<String>.from(
-        json['confluences'] ?? [],
-      ),
+      confluences: List<String>.from(json['confluences'] ?? []),
 
       chartImage: json['chart_image'],
 
-      chartImageUrl:
-          json['chart_image_url'],
+      chartImageUrl: json['chart_image_url'],
 
-      createdAt: DateTime.parse(
-        json['created_at'],
-      ),
+      createdAt: DateTime.parse(json['created_at']),
 
-      publishedAt:
-          json['published_at'] != null
-              ? DateTime.parse(
-                  json['published_at'],
-                )
-              : null,
+      publishedAt: json['published_at'] != null
+          ? DateTime.parse(json['published_at'])
+          : null,
 
-      status: json['status'],
+      status: json['status'] ?? '',
+
+      visibility: json['visibility'] ?? 'free',
+
+      locked: json['locked'] ?? false,
+
+      canView: json['can_view'] ?? true,
+
+      upgradePlan: json['upgrade_plan'],
+
+      histories: histories,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-
-      'symbol': {
-        'id': symbolId,
-        'symbol': symbol,
-        'name': symbolName,
-        'asset_type': assetType,
-        'broker_symbol': brokerSymbol,
-        'digits': digits,
-      },
-
-      'direction': direction,
-
-      'entry_price': entryPrice,
-
-      'stop_loss': stopLoss,
-
-      'take_profit': takeProfit,
-
-      'timeframe': timeframe,
-
-      'signal_quality': signalQuality,
-
-      'overall_confidence':
-          overallConfidence,
-
-      'strategy': strategy,
-
-      'confluences': confluences,
-
-      'chart_image': chartImage,
-
-      'chart_image_url': chartImageUrl,
-
-      'created_at':
-          createdAt.toIso8601String(),
-
-      'published_at':
-          publishedAt?.toIso8601String(),
-
-      'status': status,
-    };
   }
 }

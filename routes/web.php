@@ -8,7 +8,10 @@ use App\Http\Controllers\Admin\SymbolController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\MarketAlertController;
 use App\Http\Controllers\PaymentCallbackController;
+use App\Http\Controllers\Admin\CourseController;
+use App\Http\Controllers\Admin\LessonController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,9 +22,11 @@ use App\Http\Controllers\PaymentCallbackController;
 |
 */
 
+
 Route::get('/', function () {
     return redirect('/admin');
 });
+
 
 Route::prefix('admin')->group(function () {
 
@@ -36,11 +41,6 @@ Route::prefix('admin')->group(function () {
         'index',
     ])->name('admin.dashboard');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Signals
-    |--------------------------------------------------------------------------
-    */
 
     // =====================================================================
     // PLANS
@@ -85,11 +85,10 @@ Route::prefix('admin')->group(function () {
 
     });
 
-    /*
-|--------------------------------------------------------------------------
-| Signals
-|--------------------------------------------------------------------------
-*/
+
+    // =====================================================================
+    // SIGNALS
+    // =====================================================================
 
     Route::prefix('signals')->group(function () {
 
@@ -108,6 +107,11 @@ Route::prefix('admin')->group(function () {
             'store',
         ])->name('admin.signals.store');
 
+        Route::get('/{signal}', [
+            SignalController::class,
+            'show',
+        ])->name('admin.signals.show');
+
         Route::get('/{signal}/edit', [
             SignalController::class,
             'edit',
@@ -123,10 +127,58 @@ Route::prefix('admin')->group(function () {
             'destroy',
         ])->name('admin.signals.destroy');
 
+
+        // Signal Workflow
+
+        Route::patch('/{signal}/approve', [
+            SignalController::class,
+            'approve',
+        ])->name('admin.signals.approve');
+
+        Route::patch('/{signal}/reject', [
+            SignalController::class,
+            'reject',
+        ])->name('admin.signals.reject');
+
         Route::patch('/{signal}/publish', [
             SignalController::class,
             'publish',
         ])->name('admin.signals.publish');
+
+        Route::patch('/{signal}/start', [
+            SignalController::class,
+            'start',
+        ])->name('admin.signals.start');
+
+        Route::patch('/{signal}/tp1', [
+            SignalController::class,
+            'tp1',
+        ])->name('admin.signals.tp1');
+
+        Route::patch('/{signal}/tp2', [
+            SignalController::class,
+            'tp2',
+        ])->name('admin.signals.tp2');
+
+        Route::patch('/{signal}/tp3', [
+            SignalController::class,
+            'tp3',
+        ])->name('admin.signals.tp3');
+
+        Route::get(
+            '/{signal}/close',
+            [SignalController::class, 'closeForm']
+        )->name('admin.signals.close-form');
+
+        Route::patch('/{signal}/close', [
+            SignalController::class,
+            'close',
+        ])->name('admin.signals.close');
+
+        Route::patch('/{signal}/archive', [
+            SignalController::class,
+            'archive',
+        ])->name('admin.signals.archive');
 
     });
 
@@ -164,6 +216,7 @@ Route::prefix('admin')->group(function () {
 
     });
 
+
     // =====================================================================
     // PAYMENTS
     // =====================================================================
@@ -196,12 +249,139 @@ Route::prefix('admin')->group(function () {
         ])->name('admin.payments.destroy');
 
     });
-        
-    /*
-    |--------------------------------------------------------------------------
-    | Trading Symbols
-    |--------------------------------------------------------------------------
-    */
+
+
+    // =====================================================================
+    // MARKET ALERTS
+    // =====================================================================
+
+    Route::prefix('market-alerts')->group(function () {
+
+        Route::get('/', [
+            MarketAlertController::class,
+            'index',
+        ])->name('admin.market-alerts.index');
+
+        Route::get('/create', [
+            MarketAlertController::class,
+            'create',
+        ])->name('admin.market-alerts.create');
+
+        Route::post('/', [
+            MarketAlertController::class,
+            'store',
+        ])->name('admin.market-alerts.store');
+
+        Route::get('/{marketAlert}', [
+            MarketAlertController::class,
+            'show',
+        ])->name('admin.market-alerts.show');
+
+        Route::get('/{marketAlert}/edit', [
+            MarketAlertController::class,
+            'edit',
+        ])->name('admin.market-alerts.edit');
+
+        Route::put('/{marketAlert}', [
+            MarketAlertController::class,
+            'update',
+        ])->name('admin.market-alerts.update');
+
+        Route::delete('/{marketAlert}', [
+            MarketAlertController::class,
+            'destroy',
+        ])->name('admin.market-alerts.destroy');
+
+    });
+
+    // =====================================================================
+    // COURSES
+    // =====================================================================
+
+    Route::prefix('courses')->group(function () {
+
+        Route::get('/', [
+            CourseController::class,
+            'index',
+        ])->name('admin.courses.index');
+
+        Route::get('/create', [
+            CourseController::class,
+            'create',
+        ])->name('admin.courses.create');
+
+        Route::post('/', [
+            CourseController::class,
+            'store',
+        ])->name('admin.courses.store');
+
+        Route::get('/{course}', [
+            CourseController::class,
+            'show',
+        ])->name('admin.courses.show');
+
+        Route::get('/{course}/edit', [
+            CourseController::class,
+            'edit',
+        ])->name('admin.courses.edit');
+
+        Route::put('/{course}', [
+            CourseController::class,
+            'update',
+        ])->name('admin.courses.update');
+
+        Route::delete('/{course}', [
+            CourseController::class,
+            'destroy',
+        ])->name('admin.courses.destroy');
+
+    });
+
+    // =====================================================================
+    // LESSONS
+    // =====================================================================
+
+    Route::prefix('lessons')->group(function () {
+
+        Route::get('/', [
+            LessonController::class,
+            'index',
+        ])->name('admin.lessons.index');
+
+        Route::get('/create', [
+            LessonController::class,
+            'create',
+        ])->name('admin.lessons.create');
+
+        Route::post('/', [
+            LessonController::class,
+            'store',
+        ])->name('admin.lessons.store');
+
+        Route::get('/{lesson}', [
+            LessonController::class,
+            'show',
+        ])->name('admin.lessons.show');
+
+        Route::get('/{lesson}/edit', [
+            LessonController::class,
+            'edit',
+        ])->name('admin.lessons.edit');
+
+        Route::put('/{lesson}', [
+            LessonController::class,
+            'update',
+        ])->name('admin.lessons.update');
+
+        Route::delete('/{lesson}', [
+            LessonController::class,
+            'destroy',
+        ])->name('admin.lessons.destroy');
+
+    });
+    // =====================================================================
+    // TRADING SYMBOLS
+    // =====================================================================
 
     Route::prefix('symbols')->group(function () {
 
@@ -237,6 +417,10 @@ Route::prefix('admin')->group(function () {
 
     });
 
+
+    // =====================================================================
+    // PAYMENT CALLBACK
+    // =====================================================================
 
     Route::get('/payment/callback', [
         PaymentCallbackController::class,

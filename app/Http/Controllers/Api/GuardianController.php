@@ -8,6 +8,8 @@ use App\Models\GuardianConnectionCode;
 use App\Models\RiskSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\GuardianTradeExecution;
+
 
 class GuardianController extends Controller
 {
@@ -583,5 +585,181 @@ class GuardianController extends Controller
                     $guardianAccount->is_enabled,
             ],
         ]);
+    }
+
+    /**
+ * Record an Auto Trading execution result from Guardian EA.
+ */
+public function autoTradeResult(Request $request): JsonResponse
+{
+    $validated = $request->validate([
+        'platform' => [
+            'required',
+            'string',
+            'in:MT4,MT5',
+        ],
+
+        'account_number' => [
+            'required',
+            'string',
+        ],
+
+        'device_token' => [
+            'required',
+            'string',
+        ],
+
+        'signal_id' => [
+            'nullable',
+            'integer',
+            'exists:signals,id',
+        ],
+
+        'ticket' => [
+            'nullable',
+            'string',
+        ],
+
+        'symbol' => [
+            'required',
+            'string',
+        ],
+
+        'direction' => [
+            'required',
+            'string',
+            'in:BUY,SELL',
+        ],
+
+        'lots' => [
+            'nullable',
+            'numeric',
+            'min:0',
+        ],
+
+        'entry_price' => [
+            'nullable',
+            'numeric',
+        ],
+
+        'stop_loss' => [
+            'nullable',
+            'numeric',
+        ],
+
+        'take_profit' => [
+            'nullable',
+            'numeric',
+        ],
+
+        'status' => [
+            'required',
+            'string',
+            'in:executed,rejected,failed',
+        ],
+
+        'reason' => [
+            'nullable',
+            'string',
+            'max:1000',
+        ],
+
+        'error_code' => [
+            'nullable',
+            'integer',
+        ],
+
+        'executed_at' => [
+            'nullable',
+            'date',
+        ],
+    ]);
+
+        // -------------------------------------------------------------
+        // Authenticate Guardian device
+        // -------------------------------------------------------------
+
+        $deviceTokenHash = hash(
+            'sha256',
+            $validated['device_token']
+        );
+
+        $guardianAccount = GuardianAccount::where(
+            'platform',
+            $validated['platform']
+        )
+            ->where(
+                'account_number',
+                $validated['account_number']
+            )
+            ->where(
+                'device_token_hash',
+                $deviceTokenHash
+            )
+            ->first();
+
+        if (!$guardianAccount) {
+            return response()->json([
+                'message' => 'Invalid Guardian credentials.',
+            ], 401);
+        }
+
+        // -------------------------------------------------------------
+        // Store execution result
+        // -------------------------------------------------------------
+
+        $execution = GuardianTradeExecution::create([
+            'guardian_account_id' => $guardianAccount->id,
+
+            'signal_id' =>
+                $validated['signal_id'] ?? null,
+
+            'ticket' =>
+                $validated['ticket'] ?? null,
+
+            'platform' =>
+                $validated['platform'],
+
+            'symbol' =>
+                $validated['symbol'],
+
+            'direction' =>
+                $validated['direction'],
+
+            'lots' =>
+                $validated['lots'] ?? null,
+
+            'entry_price' =>
+                $validated['entry_price'] ?? null,
+
+            'stop_loss' =>
+                $validated['stop_loss'] ?? null,
+
+            'take_profit' =>
+                $validated['take_profit'] ?? null,
+
+            'status' =>
+                $validated['status'],
+
+            'reason' =>
+                $validated['reason'] ?? null,
+
+            'error_code' =>
+                $validated['error_code'] ?? null,
+
+            'executed_at' =>
+                $validated['executed_at'] ?? now(),
+        ]);
+
+        return response()->json([
+            'message' =>
+                'Guardian auto-trade result recorded.',
+
+            'execution_id' =>
+                $execution->id,
+
+            'status' =>
+                $execution->status,
+        ], 201);
     }
 }

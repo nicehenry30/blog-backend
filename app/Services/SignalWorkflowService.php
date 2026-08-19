@@ -13,192 +13,195 @@ class SignalWorkflowService
     }
 
     /**
-     * Common workflow handler.
+     * Approve Signal.
      */
-    protected function changeStatus(
+    public function approve(
         Signal $signal,
-        ?User $user,
-        string $newStatus,
-        string $event,
-        string $description,
-        array $extra = [],
+        User $user
     ): void {
 
         $oldStatus = $signal->status;
 
-        $signal->update(
-            array_merge([
-                'status' => $newStatus,
-            ], $extra)
-        );
+        $signal->approve($user);
 
         $this->historyService->record(
             signal: $signal,
             user: $user,
-            event: $event,
-            oldStatus: $oldStatus,
-            newStatus: $newStatus,
-            description: $description,
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Workflow Methods
-    |--------------------------------------------------------------------------
-    */
-
-    public function approve(
-        Signal $signal,
-        User $user,
-    ): void {
-
-        $this->changeStatus(
-            signal: $signal,
-            user: $user,
-            newStatus: 'Approved',
             event: 'approved',
+            oldStatus: $oldStatus,
+            newStatus: Signal::STATUS_APPROVED,
             description: 'Signal approved.',
-            extra: [
-                'approved_by' => $user->id,
-                'approved_at' => now(),
-            ],
         );
     }
 
-    public function publish(
-        Signal $signal,
-        User $user,
-    ): void {
-
-        $this->changeStatus(
-            signal: $signal,
-            user: $user,
-            newStatus: 'Published',
-            event: 'published',
-            description: 'Signal published.',
-            extra: [
-                'published_at' => now(),
-            ],
-        );
-    }
-
+    /**
+     * Reject Signal.
+     */
     public function reject(
         Signal $signal,
-        User $user,
+        User $user
     ): void {
 
-        $this->changeStatus(
+        $oldStatus = $signal->status;
+
+        $signal->reject();
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'Rejected',
             event: 'rejected',
+            oldStatus: $oldStatus,
+            newStatus: Signal::STATUS_REJECTED,
             description: 'Signal rejected.',
         );
     }
 
-    public function start(
+    /**
+     * Publish Signal.
+     */
+    public function publish(
         Signal $signal,
-        User $user,
+        User $user
     ): void {
 
-        $this->changeStatus(
+        $oldStatus = $signal->status;
+
+        $signal->publish();
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'Running',
-            event: 'started',
-            description: 'Trade is now running.',
+            event: 'published',
+            oldStatus: $oldStatus,
+            newStatus: Signal::STATUS_PUBLISHED,
+            description: 'Signal published.',
         );
     }
 
-    public function tp1(
+    /**
+     * Start Signal.
+     */
+    public function start(
         Signal $signal,
-        User $user,
+        User $user
     ): void {
 
-        $this->changeStatus(
+        $oldStatus = $signal->status;
+
+        $signal->start();
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'TP1 Hit',
-            event: 'tp1_hit',
+            event: 'started',
+            oldStatus: $oldStatus,
+            newStatus: Signal::STATUS_RUNNING,
+            description: 'Signal started.',
+        );
+    }
+        /**
+     * Record TP1.
+     */
+    public function tp1(
+        Signal $signal,
+        User $user
+    ): void {
+
+        $signal->markTp1();
+
+        $this->historyService->record(
+            signal: $signal,
+            user: $user,
+            event: 'tp1',
+            oldStatus: $signal->status,
+            newStatus: $signal->status,
             description: 'Take Profit 1 reached.',
         );
     }
 
+    /**
+     * Record TP2.
+     */
     public function tp2(
         Signal $signal,
-        User $user,
+        User $user
     ): void {
 
-        $this->changeStatus(
+        $signal->markTp2();
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'TP2 Hit',
-            event: 'tp2_hit',
+            event: 'tp2',
+            oldStatus: $signal->status,
+            newStatus: $signal->status,
             description: 'Take Profit 2 reached.',
         );
     }
 
+    /**
+     * Record TP3.
+     */
     public function tp3(
         Signal $signal,
-        User $user,
+        User $user
     ): void {
 
-        $this->changeStatus(
+        $signal->markTp3();
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'TP3 Hit',
-            event: 'tp3_hit',
+            event: 'tp3',
+            oldStatus: $signal->status,
+            newStatus: $signal->status,
             description: 'Take Profit 3 reached.',
         );
     }
 
+    /**
+     * Close Signal.
+     */
     public function close(
         Signal $signal,
         User $user,
         string $result,
-        int $pips,
+        int $pips
     ): void {
 
-        $this->changeStatus(
+        $oldStatus = $signal->status;
+
+        $signal->close($result, $pips);
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'Closed',
             event: 'closed',
-            description: "Trade closed as {$result}.",
-            extra: [
-                'result' => $result,
-                'pips' => $pips,
-                'closed_at' => now(),
-            ],
+            oldStatus: $oldStatus,
+            newStatus: Signal::STATUS_CLOSED,
+            description: "Signal closed ({$result}, {$pips} pips).",
         );
     }
 
-    public function cancel(
+    /**
+     * Archive Signal.
+     */
+    public function archive(
         Signal $signal,
-        User $user,
+        User $user
     ): void {
 
-        $this->changeStatus(
+        $oldStatus = $signal->status;
+
+        $signal->expire();
+
+        $this->historyService->record(
             signal: $signal,
             user: $user,
-            newStatus: 'Cancelled',
-            event: 'cancelled',
-            description: 'Signal cancelled.',
-        );
-    }
-
-    public function expire(
-        Signal $signal,
-        User $user,
-    ): void {
-
-        $this->changeStatus(
-            signal: $signal,
-            user: $user,
-            newStatus: 'Expired',
-            event: 'expired',
-            description: 'Signal expired.',
+            event: 'archived',
+            oldStatus: $oldStatus,
+            newStatus: Signal::STATUS_EXPIRED,
+            description: 'Signal archived.',
         );
     }
 }

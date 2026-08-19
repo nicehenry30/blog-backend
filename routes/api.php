@@ -13,6 +13,11 @@ use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\MarketAlertController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\LessonController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\UserSettingController;
 // =====================================================================
 // PUBLIC AUTH ROUTES
 // =====================================================================
@@ -44,6 +49,11 @@ Route::post('/guardian/heartbeat', [
 Route::post('/guardian/risk-settings', [
     GuardianController::class,
     'riskSettings',
+]);
+
+Route::post('/guardian/auto-trade/result', [
+    GuardianController::class,
+    'autoTradeResult',
 ]);
 
 // =====================================================================
@@ -254,10 +264,40 @@ Route::middleware('auth:sanctum')->group(function () {
         'initialize',
     ]);
 
-    Route::post('/payments/{payment}/verify', [
-        PaymentController::class,
-        'verify',
+    Route::post('/payments/verify', [
+    PaymentController::class,
+    'verify',
     ]);
+
+        // Payment History
+    Route::get('/payments', [
+        PaymentController::class,
+        'index',
+    ]);
+
+    // Current payment
+    Route::get('/payments/{payment}', [
+        PaymentController::class,
+        'show',
+    ]);
+
+    Route::post('/device-token', [
+        DeviceTokenController::class,
+        'store',
+    ]);
+
+    Route::delete('/device-token', [
+        DeviceTokenController::class,
+        'destroy',
+    ]);
+
+    Route::get('/settings', [UserSettingController::class, 'show']);
+    Route::put('/settings/auto-trading', [UserSettingController::class, 'updateAutoTrading']);
+    Route::put(
+    '/settings/auto-trading/preferences',
+    [UserSettingController::class, 'updatePreferences']
+    );
+
 
 });
 
@@ -269,3 +309,47 @@ Route::post('/payments/webhook', [
     PaymentController::class,
     'webhook',
 ]);
+
+// ================================================================
+// MARKET ALERTS
+// ================================================================
+
+    Route::get('/market-alerts', [
+        MarketAlertController::class,
+        'index',
+    ]);
+
+    Route::get('/market-alerts/{marketAlert}', [
+        MarketAlertController::class,
+        'show',
+    ]);
+
+    Route::post('/market-alerts', [
+        MarketAlertController::class,
+        'store',
+    ]);
+
+    Route::put('/market-alerts/{marketAlert}', [
+        MarketAlertController::class,
+        'update',
+    ]);
+
+    Route::delete('/market-alerts/{marketAlert}', [
+        MarketAlertController::class,
+        'destroy',
+    ]);
+
+    Route::get('/courses', [
+    CourseController::class,
+    'index',
+    ]);
+
+    Route::get('/courses/{course}', [
+        CourseController::class,
+        'show',
+    ]);
+
+    Route::get('/lessons/{lesson}', [
+    LessonController::class,
+    'show',
+    ]);

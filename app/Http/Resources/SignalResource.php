@@ -5,14 +5,29 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Plan;
+use App\Services\SubscriptionService;
+use App\Http\Resources\SignalHistoryResource;
 
 class SignalResource extends JsonResource
 {
     /**
+
+    
      * Transform the resource into an array.
      */
     public function toArray(Request $request): array
     {
+        $canView = true;
+
+        if (auth()->check()) {
+            $canView = app(SubscriptionService::class)
+                ->canViewSignal(
+                    auth()->user(),
+                    $this->resource
+                );
+        }
+
         return [
 
             'id' => $this->id,
@@ -46,6 +61,14 @@ class SignalResource extends JsonResource
 
             'take_profit' => (float) $this->take_profit,
 
+            'take_profit_2' => $this->take_profit_2
+                ? (float) $this->take_profit_2
+                : null,
+
+            'take_profit_3' => $this->take_profit_3
+                ? (float) $this->take_profit_3
+                : null,
+
             'timeframe' => $this->timeframe,
 
             /*
@@ -61,6 +84,14 @@ class SignalResource extends JsonResource
             'strategy' => $this->strategy,
 
             'confluences' => $this->confluences ?? [],
+
+            'analysis' => $this->analysis,
+
+            'ai_score' => $this->ai_score !== null
+                ? (float) $this->ai_score
+                : null,
+
+            'ai_comment' => $this->ai_comment,
 
             /*
             |--------------------------------------------------------------------------
@@ -82,6 +113,26 @@ class SignalResource extends JsonResource
 
             'status' => $this->status,
 
+            'visibility' => $this->visibility,
+
+            'auto_executable' => (bool) $this->auto_executable,
+
+            'locked' => !$canView,
+
+            'can_view' => $canView,
+
+            'upgrade_plan' => match ($this->visibility) {
+
+                Plan::FREE => null,
+
+                Plan::PREMIUM => 'Premium',
+
+               Plan::PRO => 'Prop Firm',
+
+                default => null,
+
+            },
+
             'published_at' => optional(
                 $this->published_at
             )->toIso8601String(),
@@ -96,6 +147,10 @@ class SignalResource extends JsonResource
                 'id' => $this->creator?->id,
                 'name' => $this->creator?->name,
             ],
+
+            'histories' => SignalHistoryResource::collection(
+            $this->whenLoaded('histories')
+             ),
 
             /*
             |--------------------------------------------------------------------------

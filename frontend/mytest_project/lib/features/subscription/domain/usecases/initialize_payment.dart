@@ -10,7 +10,7 @@ class InitializePayment {
 
   Future<Either<Failure, String>> call(
     int planId,
-  ) async {
+  ) {
     return repository.initializePayment(
       planId,
     );

@@ -4,163 +4,268 @@
 
 @section('content')
 
-<div class="flex items-center justify-between mb-6">
+<div class="space-y-6">
 
-    <div>
-        <h2 class="text-2xl font-bold">
-            Subscription Plans
-        </h2>
+    {{-- Header --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-        <p class="text-gray-500">
-            Manage all subscription plans.
-        </p>
+        <div>
+            <h2 class="text-2xl font-bold">
+                Subscription Plans
+            </h2>
+
+            <p class="text-gray-500">
+                Manage pricing, billing periods, features, and plan status.
+            </p>
+        </div>
+
+        <a
+            href="{{ route('admin.plans.create') }}"
+            class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium"
+        >
+            + Create Plan
+        </a>
+
     </div>
 
-    <a
-        href="{{ route('admin.plans.create') }}"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium"
-    >
-        + Create Plan
-    </a>
 
-</div>
+    {{-- Success Message --}}
+    @if(session('success'))
 
-<div class="bg-white rounded-xl shadow">
+        <div class="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            {{ session('success') }}
+        </div>
 
-    <table class="w-full">
+    @endif
 
-        <thead class="bg-gray-100">
 
-        <tr>
+    {{-- Validation Errors --}}
+    @if($errors->any())
 
-            <th class="text-left px-6 py-4">
-                Name
-            </th>
+        <div class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
 
-            <th class="text-left px-6 py-4">
-                Price
-            </th>
+            <ul class="list-disc list-inside">
 
-            <th class="text-left px-6 py-4">
-                Billing
-            </th>
+                @foreach($errors->all() as $error)
 
-            <th class="text-left px-6 py-4">
-                Features
-            </th>
+                    <li>{{ $error }}</li>
 
-            <th class="text-left px-6 py-4">
-                Status
-            </th>
+                @endforeach
 
-            <th class="text-left px-6 py-4">
-                Actions
-            </th>
+            </ul>
 
-        </tr>
+        </div>
 
-        </thead>
+    @endif
 
-        <tbody>
 
-        @forelse($plans as $plan)
+    {{-- Plans Table --}}
+    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
 
-            <tr class="border-t">
+        <div class="overflow-x-auto">
 
-                <td class="px-6 py-4 font-semibold">
-                    {{ $plan->name }}
-                </td>
+            <table class="w-full">
 
-                <td class="px-6 py-4">
-                    {{ $plan->currency }}
-                    {{ number_format($plan->price, 2) }}
-                </td>
+                <thead class="bg-gray-100">
 
-                <td class="px-6 py-4">
-                    {{ ucfirst($plan->billing_cycle) }}
-                </td>
+                <tr>
 
-                <td class="px-6 py-4">
-                    {{ $plan->features_count }}
-                </td>
+                    <th class="text-left px-6 py-4">
+                        Plan
+                    </th>
 
-                <td class="px-6 py-4">
+                    <th class="text-left px-6 py-4">
+                        Price
+                    </th>
 
-                    @if($plan->is_active)
+                    <th class="text-left px-6 py-4">
+                        Billing
+                    </th>
 
-                        <span class="px-3 py-1 rounded-full bg-green-100 text-green-700">
-                            Active
-                        </span>
+                    <th class="text-left px-6 py-4">
+                        Features
+                    </th>
 
-                    @else
+                    <th class="text-left px-6 py-4">
+                        Status
+                    </th>
 
-                        <span class="px-3 py-1 rounded-full bg-red-100 text-red-700">
-                            Disabled
-                        </span>
+                    <th class="text-left px-6 py-4">
+                        Actions
+                    </th>
 
-                    @endif
+                </tr>
 
-                </td>
+                </thead>
 
-                <td class="px-6 py-4 space-x-3">
+                <tbody>
 
-                    <a
-                        href="{{ route('admin.plans.edit', $plan) }}"
-                        class="text-blue-600"
-                    >
-                        Edit
-                    </a>
+                @forelse($plans as $plan)
 
-                    <form
-                        action="{{ route('admin.plans.destroy', $plan) }}"
-                        method="POST"
-                        class="inline"
-                    >
-                        @csrf
-                        @method('DELETE')
+                    <tr class="border-t hover:bg-gray-50">
 
-                        <button
-                            onclick="return confirm('Delete this plan?')"
-                            class="text-red-600"
+                        {{-- Plan --}}
+                        <td class="px-6 py-4">
+
+                            <div class="font-semibold">
+                                {{ $plan->name }}
+                            </div>
+
+                            <div class="text-sm text-gray-500">
+                                {{ $plan->slug }}
+                            </div>
+
+                        </td>
+
+
+                        {{-- Price --}}
+                        <td class="px-6 py-4">
+
+                            <span class="font-semibold">
+                                {{ $plan->currency }}
+                                {{ number_format($plan->price, 2) }}
+                            </span>
+
+                        </td>
+
+
+                        {{-- Billing --}}
+                        <td class="px-6 py-4">
+
+                            @switch($plan->billing_cycle)
+
+                                @case('monthly')
+                                    1 Month
+                                    @break
+
+                                @case('three_months')
+                                    3 Months
+                                    @break
+
+                                @case('yearly')
+                                    1 Year
+                                    @break
+
+                                @case('two_year')
+                                    2 Years
+                                    @break
+
+                                @default
+                                    {{ $plan->billing_cycle }}
+
+                            @endswitch
+
+                        </td>
+
+
+                        {{-- Features --}}
+                        <td class="px-6 py-4">
+
+                            <span class="font-medium">
+                                {{ $plan->features_count }}
+                            </span>
+
+                        </td>
+
+
+                        {{-- Status --}}
+                        <td class="px-6 py-4">
+
+                            @if($plan->is_active)
+
+                                <span class="inline-flex px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">
+                                    Active
+                                </span>
+
+                            @else
+
+                                <span class="inline-flex px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-medium">
+                                    Disabled
+                                </span>
+
+                            @endif
+
+                        </td>
+
+
+                        {{-- Actions --}}
+                        <td class="px-6 py-4">
+
+                            <div class="flex items-center gap-3">
+
+                                <a
+                                    href="{{ route('admin.plans.show', $plan) }}"
+                                    class="text-gray-600 hover:text-gray-900"
+                                >
+                                    View
+                                </a>
+
+                                <a
+                                    href="{{ route('admin.plans.edit', $plan) }}"
+                                    class="text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    action="{{ route('admin.plans.destroy', $plan) }}"
+                                    method="POST"
+                                    class="inline"
+                                >
+
+                                    @csrf
+
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        onclick="return confirm('Delete this plan?')"
+                                        class="text-red-600 hover:text-red-800"
+                                    >
+                                        Delete
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="text-center py-10 text-gray-500"
                         >
-                            Delete
-                        </button>
+                            No subscription plans found.
+                        </td>
 
-                    </form>
+                    </tr>
 
-                </td>
+                @endforelse
 
-            </tr>
+                </tbody>
 
-        @empty
+            </table>
 
-            <tr>
+        </div>
 
-                <td
-                    colspan="6"
-                    class="text-center py-10 text-gray-500"
-                >
-                    No subscription plans found.
-                </td>
+    </div>
 
-            </tr>
 
-        @endforelse
+    {{-- Pagination --}}
+    @if($plans->hasPages())
 
-        </tbody>
+        <div>
+            {{ $plans->links() }}
+        </div>
 
-    </table>
+    @endif
 
 </div>
-
-@if($plans->hasPages())
-
-<div class="mt-6">
-
-    {{ $plans->links() }}
-
-</div>
-
-@endif
 
 @endsection

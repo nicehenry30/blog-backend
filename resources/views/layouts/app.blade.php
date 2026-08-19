@@ -108,8 +108,8 @@
                     @yield('title')
                 </h2>
 
-                <div class="font-medium">
-                    {{ auth()->user()->name ?? 'Administrator' }}
+               <div class="font-medium">
+                    {{ auth()->user()?->name ?? 'Administrator' }}
                 </div>
 
             </div>
