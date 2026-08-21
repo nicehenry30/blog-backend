@@ -21,30 +21,37 @@ class SignalController extends Controller
     }
 
     /**
-     * Display published signals.
+     * Display published and running signals.
      */
     public function index()
     {
         $signals = Signal::with([
-    'symbol',
-    'creator',
-    'approver',
-    'histories',
-    ])
-   ->whereIn('status', [
-    Signal::STATUS_PUBLISHED,
-    Signal::STATUS_RUNNING,
-    ])
-    ->latest()
-    ->get();
+            'symbol',
+            'creator',
+            'approver',
+            'histories',
+        ])
+            ->whereIn('status', [
+                Signal::STATUS_PUBLISHED,
+                Signal::STATUS_RUNNING,
+            ])
+            ->latest()
+            ->get();
+
         return SignalResource::collection($signals);
     }
 
     /**
-     * Store a signal.
+     * Store a new signal.
+     *
+     * The trading team creates the signal.
+     * AI analysis is handled separately through the
+     * SignalWorkflowService.
      */
-    public function store(StoreSignalRequest $request): SignalResource
-    {
+    public function store(
+        StoreSignalRequest $request
+    ): SignalResource {
+
         $data = $request->validated();
 
         $data['created_by'] = auth()->id();
@@ -73,8 +80,10 @@ class SignalController extends Controller
     /**
      * Display a signal.
      */
-    public function show(Signal $signal): SignalResource
-    {
+    public function show(
+        Signal $signal
+    ): SignalResource {
+
         return new SignalResource(
             $signal->load([
                 'symbol',
@@ -97,7 +106,8 @@ class SignalController extends Controller
             $request->validated()
         );
 
-        return new SignalResource($signal->fresh()->load([
+        return new SignalResource(
+            $signal->fresh()->load([
                 'symbol',
                 'creator',
                 'approver',
@@ -122,9 +132,11 @@ class SignalController extends Controller
 
     /**
      * Approve signal.
+     *
+     * This is an administrative/trading-team decision.
+     * AI does not approve the signal.
      */
-    public function approve(
-        Signal $signal
+    public function approve(Signal $signal
     ): SignalResource {
 
         $this->workflowService->approve(
@@ -144,6 +156,9 @@ class SignalController extends Controller
 
     /**
      * Reject signal.
+     *
+     * This is an administrative/trading-team decision.
+     * AI does not reject the signal.
      */
     public function reject(
         Signal $signal
@@ -165,7 +180,59 @@ class SignalController extends Controller
     }
 
     /**
+     * Run AI historical confirmation.
+     *
+     * AI analyzes actual historical trading data.
+     *
+     * AI does NOT:
+     * - approve the signal
+     * - reject the signal
+     * - publish the signal
+     * - block the signal
+     *
+     * It only provides:
+     * - historical score
+     * - review
+     * - evidence-based comment
+     * - historical statistics
+     */
+    public function aiConfirmation(
+        Signal $signal
+    ): JsonResponse {
+
+        $analysis = $this->workflowService
+            ->runAiConfirmation(
+                $signal,
+                auth()->user(),
+            );
+
+        return response()->json([
+            'message' => 'AI historical analysis completed.',
+
+            'data' => [
+                'signal' => new SignalResource(
+                    $signal->fresh()->load([
+                        'symbol',
+                        'creator',
+                        'approver',
+                        'histories',
+                    ])
+                ),
+
+                'ai' => [
+                    'score' => $analysis['score'],
+                    'review' => $analysis['review'],
+                    'comment' => $analysis['comment'],
+                    'historical' => $analysis['historical'],
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Publish signal.
+     *
+     * Publishing remains an administrative decision.
      */
     public function publish(
         Signal $signal
@@ -311,7 +378,7 @@ class SignalController extends Controller
         Signal $signal
     ): SignalResource {
 
-        $this->workflowService->expire(
+        $this->workflowService->archive(
             $signal,
             auth()->user(),
         );

@@ -46,7 +46,7 @@ Route::post('/guardian/heartbeat', [
     'heartbeat',
 ]);
 
-Route::post('/guardian/risk-settings', [
+Route::get('/guardian/risk-settings', [
     GuardianController::class,
     'riskSettings',
 ]);
@@ -56,19 +56,6 @@ Route::post('/guardian/auto-trade/result', [
     'autoTradeResult',
 ]);
 
-// =====================================================================
-// PUBLIC SIGNAL ROUTES
-// =====================================================================
-
-Route::get('/signals', [
-    SignalController::class,
-    'index',
-]);
-
-Route::get('/signals/{signal}', [
-    SignalController::class,
-    'show',
-]);
 
 // =====================================================================
 // AUTHENTICATED ROUTES
@@ -128,6 +115,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // SIGNALS
     // ================================================================
 
+    Route::get('/signals', [
+    SignalController::class,
+    'index',
+    ]);
+
+    Route::get('/signals/{signal}', [
+    SignalController::class,
+    'show',
+    ]);
+    
+    
     Route::post('/signals', [
         SignalController::class,
         'store',
@@ -193,6 +191,11 @@ Route::middleware('auth:sanctum')->group(function () {
         SignalController::class,
         'archive',
     ]);
+
+    Route::get(
+    '/signals/{signal}/ai-confirmation',
+    [SignalController::class, 'aiConfirmation']
+    );
 
     // ================================================================
     // RISK SETTINGS

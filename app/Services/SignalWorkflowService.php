@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\Signal;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 class SignalWorkflowService
 {
     public function __construct(
         protected SignalHistoryService $historyService,
+        protected SignalAiConfirmationService $aiConfirmationService,
     ) {
     }
 
@@ -19,7 +21,6 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
-
         $oldStatus = $signal->status;
 
         $signal->approve($user);
@@ -41,7 +42,6 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
-
         $oldStatus = $signal->status;
 
         $signal->reject();
@@ -63,7 +63,6 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
-
         $oldStatus = $signal->status;
 
         $signal->publish();
@@ -85,7 +84,6 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
-
         $oldStatus = $signal->status;
 
         $signal->start();
@@ -99,13 +97,21 @@ class SignalWorkflowService
             description: 'Signal started.',
         );
     }
-        /**
+
+    /**
      * Record TP1.
      */
     public function tp1(
         Signal $signal,
         User $user
     ): void {
+        $this->ensureRunning($signal);
+
+        if ($signal->tp1_hit_at !== null) {
+            throw ValidationException::withMessages([
+                'tp1' => 'TP1 has already been recorded.',
+            ]);
+        }
 
         $signal->markTp1();
 
@@ -126,6 +132,19 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
+        $this->ensureRunning($signal);
+
+        if ($signal->tp1_hit_at === null) {
+            throw ValidationException::withMessages([
+                'tp2' => 'TP1 must be recorded before TP2.',
+            ]);
+        }
+
+        if ($signal->tp2_hit_at !== null) {
+            throw ValidationException::withMessages([
+                'tp2' => 'TP2 has already been recorded.',
+            ]);
+        }
 
         $signal->markTp2();
 
@@ -146,6 +165,19 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
+        $this->ensureRunning($signal);
+
+        if ($signal->tp2_hit_at === null) {
+            throw ValidationException::withMessages([
+                'tp3' => 'TP2 must be recorded before TP3.',
+            ]);
+        }
+
+        if ($signal->tp3_hit_at !== null) {
+            throw ValidationException::withMessages([
+                'tp3' => 'TP3 has already been recorded.',
+            ]);
+        }
 
         $signal->markTp3();
 
@@ -168,6 +200,23 @@ class SignalWorkflowService
         string $result,
         int $pips
     ): void {
+        $this->ensureRunning($signal);
+
+        if (!in_array($result, [
+            'win',
+            'loss',
+            'breakeven',
+        ], true)) {
+            throw ValidationException::withMessages([
+                'result' => 'Invalid signal result.',
+            ]);
+        }
+
+        if ($signal->result !== null) {
+            throw ValidationException::withMessages([
+                'result' => 'Signal has already been closed.',
+            ]);
+        }
 
         $oldStatus = $signal->status;
 
@@ -190,7 +239,6 @@ class SignalWorkflowService
         Signal $signal,
         User $user
     ): void {
-
         $oldStatus = $signal->status;
 
         $signal->expire();
@@ -203,5 +251,33 @@ class SignalWorkflowService
             newStatus: Signal::STATUS_EXPIRED,
             description: 'Signal archived.',
         );
+    }
+
+    /**
+     * Run AI historical confirmation.
+     *
+     * AI only analyzes historical evidence.
+     * It does not approve, reject, publish, or
+     * otherwise control the signal workflow.
+     */
+    public function runAiConfirmation(
+        Signal $signal,
+        User $user
+    ): array {
+        return $this->aiConfirmationService->analyze($signal);
+    }
+
+    /**
+     * Ensure the signal is currently running.
+     */
+    protected function ensureRunning(
+        Signal $signal
+    ): void {
+        if (!$signal->isRunning()) {
+            throw ValidationException::withMessages([
+                'signal' =>
+                    'This action can only be performed while the signal is running.',
+            ]);
+        }
     }
 }
