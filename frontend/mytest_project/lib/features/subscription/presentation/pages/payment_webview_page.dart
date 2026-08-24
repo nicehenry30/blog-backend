@@ -68,10 +68,6 @@ class _PaymentWebViewPageState
           onNavigationRequest: (request) {
             _checkPaymentCallback(request.url);
 
-            /*
-             * Allow the navigation so Laravel's callback
-             * page can complete the Paystack verification.
-             */
             return NavigationDecision.navigate;
           },
         ),
@@ -112,13 +108,19 @@ class _PaymentWebViewPageState
     }
 
     /*
-     * We only want to react to OUR Laravel callback.
+     * Laravel callback route.
      *
-     * This prevents random Paystack navigation URLs
-     * from triggering verification.
+     * IMPORTANT:
+     * This used to be:
+     *
+     * /admin/payment/callback
+     *
+     * It is now:
+     *
+     * /payment/callback
      */
     final isPaymentCallback =
-        uri.path == '/admin/payment/callback';
+        uri.path == '/payment/callback';
 
     if (!isPaymentCallback) {
       return;
@@ -134,63 +136,77 @@ class _PaymentWebViewPageState
     callbackDetected = true;
     verifying = true;
 
+    if (mounted) {
+      setState(() {});
+    }
+
     /*
-     * Ask Laravel to verify the payment using the
-     * authenticated API.
-     *
-     * Laravel will verify the transaction with Paystack
-     * and activate the exact subscription attached to
-     * this payment.
+     * Verify the payment through the authenticated
+     * Laravel API.
      */
     context.read<SubscriptionBloc>().add(
           VerifySubscriptionPayment(reference),
         );
 
     /*
-     * Give the BLoC event time to reach the repository.
-     *
-     * We do NOT immediately pop before dispatching
-     * verification as the old implementation did.
+     * Give the BLoC time to process the verification
+     * before returning to the subscription page.
      */
     Future.delayed(
-      const Duration(milliseconds: 500),
+      const Duration(milliseconds: 700),
       () {
         if (!mounted) {
           return;
         }
 
-        Navigator.pop(
-          context,
-          true,
-        );
+        Navigator.of(context).pop(true);
       },
     );
   }
 
+  void _goBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    /*
+     * Flutter Web
+     *
+     * Paystack is opened in a separate browser tab.
+     */
     if (kIsWeb) {
       return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _goBack,
+            tooltip: 'Back',
+          ),
           title: const Text(
             'Secure Payment',
           ),
           centerTitle: true,
         ),
-        body: const Center(
+
+        body: Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.open_in_new,
                   size: 48,
                 ),
 
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                Text(
+                const Text(
                   'Paystack payment opened in a new browser tab.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -198,18 +214,30 @@ class _PaymentWebViewPageState
                   ),
                 ),
 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                Text(
+                const Text(
                   'Complete your payment there, then return to Tradewisser.',
                   textAlign: TextAlign.center,
                 ),
 
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                Text(
+                const Text(
                   'Your subscription will be verified automatically.',
                   textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 28),
+
+                ElevatedButton.icon(
+                  onPressed: _goBack,
+                  icon: const Icon(
+                    Icons.arrow_back,
+                  ),
+                  label: const Text(
+                    'Back to Plans',
+                  ),
                 ),
               ],
             ),
@@ -218,31 +246,53 @@ class _PaymentWebViewPageState
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Secure Payment',
+    /*
+     * Android / iOS WebView
+     */
+    return PopScope(
+      canPop: !verifying,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          return;
+        }
+
+        if (!verifying) {
+          _goBack();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+            ),
+            onPressed: verifying ? null : _goBack,
+            tooltip: 'Back',
+          ),
+          title: const Text(
+            'Secure Payment',
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
 
-      body: Stack(
-        children: [
-          if (controller != null)
-            WebViewWidget(
-              controller: controller!,
-            ),
+        body: Stack(
+          children: [
+            if (controller != null)
+              WebViewWidget(
+                controller: controller!,
+              ),
 
-          if (loading || verifying)
-            Container(
-              color: Colors.black.withValues(
-                alpha: 0.15,
+            if (loading || verifying)
+              Container(
+                color: Colors.black.withValues(
+                  alpha: 0.15,
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
