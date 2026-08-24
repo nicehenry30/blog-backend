@@ -1,0 +1,145 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Referral;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class ReferralService
+{
+    /**
+     * Generate a unique referral code for a user.
+     */
+    public function generateReferralCode(): string
+    {
+        do {
+            $code = strtoupper(Str::random(8));
+        } while (
+            User::where('referral_code', $code)->exists()
+        );
+
+        return $code;
+    }
+
+    /**
+     * Find a user by referral code.
+     */
+    public function findReferrer(string $referralCode): ?User
+    {
+        return User::where(
+            'referral_code',
+            $referralCode
+        )->first();
+    }
+
+    /**
+     * Create a referral relationship.
+     */
+    public function createReferral(
+        User $referrer,
+        User $referredUser
+    ): Referral {
+        return DB::transaction(function () use (
+            $referrer,
+            $referredUser
+        ) {
+            return Referral::create([
+                'referrer_id' => $referrer->id,
+                'referred_user_id' => $referredUser->id,
+                'referral_code' => $referrer->referral_code,
+                'reward_amount' => 0,
+                'reward_currency' => 'USD',
+                'status' => 'pending',
+            ]);
+        });
+    }
+
+    /**
+     * Qualify a referral.
+     *
+     * A referral should only become qualified when the referred
+     * user satisfies the conditions defined by the subscription
+     * system.
+     */
+    public function qualifyReferral(
+        User $referredUser
+    ): ?Referral {
+        $referral = Referral::where(
+            'referred_user_id',
+            $referredUser->id
+        )
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$referral) {
+            return null;
+        }
+
+        $referral->update([
+            'status' => 'qualified',
+            'qualified_at' => now(),
+        ]);
+
+        return $referral->fresh();
+    }
+
+    /**
+     * Mark a qualified referral as rewarded.
+     */
+    public function rewardReferral(
+        Referral $referral,
+        float $amount,
+        string $currency = 'USD'
+    ): Referral {
+        $referral->update([
+            'reward_amount' => $amount,
+            'reward_currency' => $currency,
+            'status' => 'rewarded',
+            'rewarded_at' => now(),
+        ]);
+
+        return $referral->fresh();
+    }
+
+    /**
+     * Cancel a referral.
+     */
+    public function cancelReferral(
+        Referral $referral
+    ): Referral {
+        $referral->update([
+            'status' => 'cancelled',
+        ]);
+
+        return $referral->fresh();
+    }
+
+    /**
+     * Get all referrals made by a user.
+     */
+    public function getUserReferrals(
+        User $user
+    ) {
+        return Referral::where(
+            'referrer_id',
+            $user->id
+        )
+            ->with('referredUser')
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * Get the referral record for a referred user.
+     */
+    public function getReferralForUser(
+        User $user
+    ): ?Referral {
+        return Referral::where(
+            'referred_user_id',
+            $user->id
+        )->first();
+    }
+}

@@ -1,262 +1,412 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ProfilePage extends StatelessWidget {
-  final String name;
-  final String email;
+import 'package:mytest_project/core/di/injection_container.dart';
 
-  const ProfilePage({super.key, required this.name, required this.email});
+import 'package:mytest_project/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:mytest_project/features/profile/presentation/pages/edit_profile_page.dart';
 
+import 'package:mytest_project/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:mytest_project/features/settings/presentation/pages/settings_page.dart';
+
+import 'package:mytest_project/features/guardian/presentation/bloc/guardian_bloc.dart';
+import 'package:mytest_project/features/guardian/presentation/pages/guardian_page.dart';
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Profile'),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
+      body: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) {
+          if (state is ProfileLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          if (state is ProfileFailure) {
+            return Center(
+              child: Padding(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2563EB), Color(0xFF1E3A8A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircleAvatar(
-                      radius: 45,
-                      child: Icon(Icons.person, size: 50),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 50,
                     ),
-
-                    const SizedBox(height: 16),
-
+                    const SizedBox(height: 12),
                     Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      state.message,
+                      textAlign: TextAlign.center,
                     ),
-
-                    const SizedBox(height: 6),
-
-                    Text(email, style: const TextStyle(color: Colors.white70)),
-
                     const SizedBox(height: 16),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        "⭐ Premium Trader",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.edit),
-                        label: const Text("Edit Profile"),
-                      ),
+                    ElevatedButton(
+                      onPressed: () {
+                        context
+                            .read<ProfileBloc>()
+                            .add(LoadProfile());
+                      },
+                      child: const Text('Retry'),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+            );
+          }
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Trading Statistics',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+          if (state is ProfileLoaded) {
+            final profile = state.profile;
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                context
+                    .read<ProfileBloc>()
+                    .add(LoadProfile());
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // ==========================================================
+                  // PROFILE HEADER
+                  // ==========================================================
+
+                  _ProfileHeader(
+                    name: profile.name,
+                    email: profile.email,
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.6,
-                children: const [
-                  _StatCard(
-                    title: 'Trades',
-                    value: '284',
-                    icon: Icons.candlestick_chart,
-                  ),
-                  _StatCard(
-                    title: 'Win Rate',
-                    value: '73%',
-                    icon: Icons.trending_up,
-                  ),
-                  _StatCard(
-                    title: 'Profit',
-                    value: '+\$5,240',
-                    icon: Icons.attach_money,
-                  ),
-                  _StatCard(
-                    title: 'Discipline',
-                    value: '92/100',
-                    icon: Icons.emoji_events,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                  // ==========================================================
+                  // PROFILE INFORMATION
+                  // ==========================================================
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Guardian Status',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              const _GuardianStatusCard(),
-              const SizedBox(height: 24),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Education Progress',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                  ),
-                ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.person_outline),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Personal Information',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Edit Profile',
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () async {
+                                  await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider.value(
+                                      value: context.read<ProfileBloc>(),
+                                      child: EditProfilePage(
+                                        profile: profile,
+                                      ),
+                                    ),
+                                  ),
+                                );
 
-                const SizedBox(height: 16),
+                                  if (!context.mounted) return;
 
-                const _EducationProgressCard(),
-                const SizedBox(height: 24),
+                                  context
+                                      .read<ProfileBloc>()
+                                      .add(LoadProfile());
+                                },
+                              ),
+                            ],
+                          ),
 
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Subscription',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                          const Divider(height: 24),
+
+                          _InfoRow(
+                            icon: Icons.person_outline,
+                            label: 'Name',
+                            value: profile.name,
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          _InfoRow(
+                            icon: Icons.email_outlined,
+                            label: 'Email',
+                            value: profile.email,
+                          ),
+                        ],
                       ),
                     ),
                   ),
 
-            const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-            const _SubscriptionCard(),
-            const SizedBox(height: 24),
+                  // ==========================================================
+                    // GUARDIAN
+                    // ==========================================================
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Settings',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    const Text(
+                      'Guardian',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // -------------------- MT4 --------------------
+
+                    _GuardianCard(
+                      title: 'MT4 Guardian',
+                      platform: 'MT4',
+                      connected: profile.mt4Connected,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider(
+                              create: (_) => serviceLocator<GuardianBloc>()
+                                ..add(
+                                  GuardianLoadRequested(),
+                                ),
+                              child: const GuardianPage(
+                                platform: 'MT4',
+                              ),
+                            ),
+                          ),
+                        );
+
+                        if (!context.mounted) return;
+
+                        context.read<ProfileBloc>().add(
+                          LoadProfile(),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // -------------------- MT5 --------------------
+
+                    _GuardianCard(
+                      title: 'MT5 Guardian',
+                      platform: 'MT5',
+                      connected: profile.mt5Connected,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider(
+                              create: (_) => serviceLocator<GuardianBloc>()
+                                ..add(
+                                  GuardianLoadRequested(),
+                                ),
+                              child: const GuardianPage(
+                                platform: 'MT5',
+                              ),
+                            ),
+                          ),
+                        );
+
+                        if (!context.mounted) return;
+
+                        context.read<ProfileBloc>().add(
+                          LoadProfile(),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                  // ==========================================================
+                  // ACCOUNT
+                  // ==========================================================
+
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
                   ),
-                ),
-              ),
+                  child: Column(
+                    children: [
+                      // ======================================================
+                      // SETTINGS
+                      // ======================================================
 
-              const SizedBox(height: 16),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.settings_outlined,
+                        ),
+                        title: const Text('Settings'),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsPage(),
+                            ),
+                          );
+                        },
+                      ),
 
-              const _SettingsCard(),
-              const SizedBox(height: 24),
+                      const Divider(height: 1),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Logout
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Logout'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
+                      // ======================================================
+                      // LOGOUT
+                      // ======================================================
+
+                      ListTile(
+                        leading: const Icon(
+                          Icons.logout,
+                        ),
+                        title: const Text('Logout'),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                        ),
+                        onTap: () async {
+                          final shouldLogout = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) {
+                              return AlertDialog(
+                                title: const Text('Logout'),
+                                content: const Text(
+                                  'Are you sure you want to logout?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(
+                                        dialogContext,
+                                        false,
+                                      );
+                                    },
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(
+                                        dialogContext,
+                                        true,
+                                      );
+                                    },
+                                    child: const Text('Logout'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (!context.mounted || shouldLogout != true) {
+                            return;
+                          }
+
+                          context.read<AuthBloc>().add(
+                            const AuthLogOut(),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ),
+                ),                              
+                 const SizedBox(height: 30),
+                ],
               ),
+            );
+          }
 
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
       ),
     );
   }
 }
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
 
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
+// ============================================================================
+// PROFILE HEADER
+// ============================================================================
+
+class _ProfileHeader extends StatelessWidget {
+  final String name;
+  final String email;
+
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        padding: const EdgeInsets.all(20),
+        child: Row(
           children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            CircleAvatar(
+              radius: 34,
+              child: Text(
+                name.isNotEmpty
+                    ? name.substring(0, 1).toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.grey.shade600,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    email,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -265,232 +415,166 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-class _GuardianStatusCard extends StatelessWidget {
-  const _GuardianStatusCard();
+
+// ============================================================================
+// INFORMATION ROW
+// ============================================================================
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 21,
+          color: Theme.of(context)
+              .colorScheme
+              .primary,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================================
+// GUARDIAN CARD
+// ============================================================================
+
+class _GuardianCard extends StatelessWidget {
+  final String title;
+  final String platform;
+  final bool connected;
+  final VoidCallback onTap;
+
+  const _GuardianCard({
+    required this.title,
+    required this.platform,
+    required this.connected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // GREEN = CONNECTED
+    // RED   = DISCONNECTED
+    final statusColor =
+        connected ? Colors.green : Colors.red;
+
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          children: const [
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.green,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 16,
+          ),
+          child: Row(
+            children: [
+              // Guardian icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Icon(
-                  Icons.computer,
-                  color: Colors.white,
+                  Icons.shield_outlined,
+                  color: statusColor,
+                  size: 27,
                 ),
               ),
-              title: Text('MT4 Guardian'),
-              subtitle: Text('Connected'),
-              trailing: Icon(
-                Icons.check_circle,
-                color: Colors.green,
-              ),
-            ),
-            Divider(),
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.red,
-                child: Icon(
-                  Icons.computer,
-                  color: Colors.white,
+
+              const SizedBox(width: 14),
+
+              // Title + status
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Icon(
+                          connected
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          size: 15,
+                          color: statusColor,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          connected
+                              ? '$platform Connected'
+                              : '$platform Disconnected',
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              title: Text('MT5 Guardian'),
-              subtitle: Text('Not Connected'),
-              trailing: Icon(
-                Icons.cancel,
-                color: Colors.red,
+
+              const Icon(
+                Icons.chevron_right,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-class _EducationProgressCard extends StatelessWidget {
-  const _EducationProgressCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Trading Course Progress',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            const LinearProgressIndicator(
-              value: 0.64,
-              minHeight: 10,
-              borderRadius: BorderRadius.all(
-                Radius.circular(10),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            const Text(
-              '64% Completed',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Continue Learning'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-class _SubscriptionCard extends StatelessWidget {
-  const _SubscriptionCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(
-                  Icons.workspace_premium,
-                  color: Colors.amber,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Premium Plan',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Status'),
-                Text(
-                  'Active',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Days Remaining'),
-                Text(
-                  '42 Days',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.credit_card),
-                label: const Text('Manage Subscription'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: const [
-          ListTile(
-            leading: Icon(Icons.person_outline),
-            title: Text('Account'),
-            trailing: Icon(Icons.chevron_right),
-          ),
-          Divider(height: 1),
-          ListTile(
-            leading: Icon(Icons.notifications_outlined),
-            title: Text('Notifications'),
-            trailing: Icon(Icons.chevron_right),
-          ),
-          Divider(height: 1),
-          ListTile(
-            leading: Icon(Icons.security_outlined),
-            title: Text('Security'),
-            trailing: Icon(Icons.chevron_right),
-          ),
-          Divider(height: 1),
-          ListTile(
-            leading: Icon(Icons.shield_outlined),
-            title: Text('Risk Settings'),
-            trailing: Icon(Icons.chevron_right),
-          ),
-          Divider(height: 1),
-          ListTile(
-            leading: Icon(Icons.help_outline),
-            title: Text('Help & Support'),
-            trailing: Icon(Icons.chevron_right),
-          ),
-        ],
       ),
     );
   }

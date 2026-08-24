@@ -15,7 +15,11 @@ final class ProfileLoaded extends ProfileState {
 
 final class ProfileUpdating extends ProfileState {}
 
-final class ProfileUpdated extends ProfileState {}
+final class ProfileUpdated extends ProfileState {
+  final Profile profile;
+
+  ProfileUpdated(this.profile);
+}
 
 final class ProfileFailure extends ProfileState {
   final String message;

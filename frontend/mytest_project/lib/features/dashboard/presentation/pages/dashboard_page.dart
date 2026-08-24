@@ -308,7 +308,9 @@ class DashboardPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const GuardianPage(),
+                                builder: (_) => const GuardianPage(
+                                  platform: 'MT4',
+                                )
                               ),
                             );
                           },
@@ -324,7 +326,9 @@ class DashboardPage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const GuardianPage(),
+                                builder: (_) => const GuardianPage(
+                                  platform: 'MT5',
+                                )
                               ),
                             );
                           },

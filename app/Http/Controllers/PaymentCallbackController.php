@@ -32,10 +32,11 @@ class PaymentCallbackController extends Controller
          * Paystack must provide a reference.
          */
         if (! $reference) {
-            return view('payment.failed', [
-                'message' =>
-                    'Missing payment reference.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                null,
+                'Missing payment reference.'
+            );
         }
 
         /*
@@ -48,10 +49,11 @@ class PaymentCallbackController extends Controller
         )->first();
 
         if (! $payment) {
-            return view('payment.failed', [
-                'message' =>
-                    'Payment not found.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment not found.'
+            );
         }
 
         /*
@@ -59,11 +61,8 @@ class PaymentCallbackController extends Controller
          *
          * Never trust the browser redirect alone.
          */
-        $response =
-            $this->paystackService
-                ->verifyTransaction(
-                    $reference
-                );
+        $response = $this->paystackService
+            ->verifyTransaction($reference);
 
         /*
          * Paystack verification must succeed.
@@ -73,10 +72,11 @@ class PaymentCallbackController extends Controller
             $response['status'] !== true ||
             ! isset($response['data'])
         ) {
-            return view('payment.failed', [
-                'message' =>
-                    'Payment verification failed.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment verification failed.'
+            );
         }
 
         $transaction = $response['data'];
@@ -88,10 +88,11 @@ class PaymentCallbackController extends Controller
             ! isset($transaction['status']) ||
             $transaction['status'] !== 'success'
         ) {
-            return view('payment.failed', [
-                'message' =>
-                    'Payment was not successful.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment was not successful.'
+            );
         }
 
         /*
@@ -100,13 +101,13 @@ class PaymentCallbackController extends Controller
          */
         if (
             ! isset($transaction['reference']) ||
-            $transaction['reference'] !==
-                $payment->reference
+            $transaction['reference'] !== $payment->reference
         ) {
-            return view('payment.failed', [
-                'message' =>
-                    'Payment reference mismatch.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment reference mismatch.'
+            );
         }
 
         /*
@@ -120,13 +121,12 @@ class PaymentCallbackController extends Controller
             $transaction['currency'] ?? ''
         );
 
-        if (
-            $actualCurrency !== $expectedCurrency
-        ) {
-            return view('payment.failed', [
-                'message' =>
-                    'Payment currency mismatch.',
-            ]);
+        if ($actualCurrency !== $expectedCurrency) {
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment currency mismatch.'
+            );
         }
 
         /*
@@ -141,22 +141,23 @@ class PaymentCallbackController extends Controller
          *
          * 2689081 kobo
          */
-        $expectedGatewayAmount =
-            (int) round(
-                ((float) $payment->gateway_amount) * 100
-            );
+        $expectedGatewayAmount = (int) round(
+            ((float) $payment->gateway_amount) * 100
+        );
 
-        $actualGatewayAmount =
-            (int) ($transaction['amount'] ?? 0);
+        $actualGatewayAmount = (int) (
+            $transaction['amount'] ?? 0
+        );
 
         if (
             $actualGatewayAmount !==
             $expectedGatewayAmount
         ) {
-            return view('payment.failed', [
-                'message' =>
-                    'Payment amount mismatch.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment amount mismatch.'
+            );
         }
 
         /*
@@ -166,31 +167,69 @@ class PaymentCallbackController extends Controller
          * activate the EXACT subscription attached to it.
          */
         try {
-
-            $completedPayment =
-                $this->paymentService
-                    ->completePayment(
-                        $payment,
-                        (string) (
-                            $transaction['id']
-                            ?? $transaction['reference']
-                        ),
-                        $transaction
-                    );
-
+            $completedPayment = $this->paymentService
+                ->completePayment(
+                    $payment,
+                    (string) (
+                        $transaction['id']
+                        ?? $transaction['reference']
+                    ),
+                    $transaction
+                );
         } catch (\Throwable $e) {
-
             report($e);
 
-            return view('payment.failed', [
-                'message' =>
-                    'Payment was verified, but we could not complete the subscription.',
-            ]);
+            return $this->redirectToFrontend(
+                'failed',
+                $reference,
+                'Payment was verified, but we could not complete the subscription.'
+            );
         }
 
-        return view('payment.success', [
-            'payment' =>
-                $completedPayment,
-        ]);
+        /*
+         * Payment successfully verified and completed.
+         *
+         * Redirect the customer back to the Flutter
+         * Tradewisser application instead of rendering
+         * a Laravel Blade page.
+         */
+        return $this->redirectToFrontend(
+            'success',
+            $completedPayment->reference
+        );
+    }
+
+    /**
+     * Redirect the customer back to the Flutter frontend.
+     */
+    protected function redirectToFrontend(
+        string $status,
+        ?string $reference = null,
+        ?string $message = null
+    ) {
+        $frontendUrl = rtrim(
+            config('app.frontend_url'),
+            '/'
+        );
+
+        $url = $frontendUrl
+            . '/payment/'
+            . $status;
+
+        $query = [];
+
+        if ($reference) {
+            $query['reference'] = $reference;
+        }
+
+        if ($message) {
+            $query['message'] = $message;
+        }
+
+        if (! empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        return redirect()->away($url);
     }
 }

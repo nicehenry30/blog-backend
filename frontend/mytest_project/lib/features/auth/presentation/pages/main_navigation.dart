@@ -9,8 +9,9 @@ import 'package:mytest_project/features/market_alerts/presentation/pages/market_
 import 'package:mytest_project/features/education/presentation/pages/education_page.dart';
 import 'package:mytest_project/features/journal/presentation/pages/journal_page.dart';
 import 'package:mytest_project/features/profile/presentation/pages/profile_page.dart';
-
+import 'package:mytest_project/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:mytest_project/features/journal/presentation/bloc/journal_bloc.dart';
+import 'package:mytest_project/features/subscription/presentation/pages/subscription_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String name;
@@ -48,9 +49,12 @@ class _MainNavigationState extends State<MainNavigation> {
       child: const JournalPage(),
     ),
 
-    ProfilePage(
-      name: widget.name,
-      email: widget.email,
+    const SubscriptionPage(),
+
+    BlocProvider(
+      create: (_) => serviceLocator<ProfileBloc>()
+        ..add(LoadProfile()),
+      child: const ProfilePage(),
     ),
   ];
 
@@ -73,7 +77,6 @@ class _MainNavigationState extends State<MainNavigation> {
         onDestinationSelected: _onItemTapped,
 
         destinations: const [
-
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
@@ -102,6 +105,12 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book),
             label: 'Journal',
+          ),
+
+          NavigationDestination(
+            icon: Icon(Icons.workspace_premium_outlined),
+            selectedIcon: Icon(Icons.workspace_premium),
+            label: 'Plans',
           ),
 
           NavigationDestination(

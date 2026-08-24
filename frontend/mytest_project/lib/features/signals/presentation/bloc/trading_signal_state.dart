@@ -23,3 +23,17 @@ final class TradingSignalFailure extends TradingSignalState {
 
   TradingSignalFailure(this.message);
 }
+
+final class AiSignalConfirmationLoading extends TradingSignalState {}
+
+final class AiSignalConfirmationLoaded extends TradingSignalState {
+  final AiSignalConfirmation confirmation;
+
+  AiSignalConfirmationLoaded(this.confirmation);
+}
+
+final class AiSignalConfirmationFailure extends TradingSignalState {
+  final String message;
+
+  AiSignalConfirmationFailure(this.message);
+}

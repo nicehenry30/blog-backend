@@ -17,7 +17,13 @@ class _SignalsPageState extends State<SignalsPage> {
   void initState() {
     super.initState();
 
-    context.read<TradingSignalBloc>().add(LoadTradingSignals());
+    _loadSignals();
+  }
+
+  void _loadSignals() {
+    context.read<TradingSignalBloc>().add(
+      LoadTradingSignals(),
+    );
   }
 
   @override
@@ -26,48 +32,102 @@ class _SignalsPageState extends State<SignalsPage> {
       appBar: AppBar(
         title: const Text(
           'Trading Signals',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
-
       body: BlocBuilder<TradingSignalBloc, TradingSignalState>(
         builder: (context, state) {
           if (state is TradingSignalLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
           if (state is TradingSignalFailure) {
-            return Center(child: Text(state.message));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadSignals,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
 
           if (state is TradingSignalLoaded) {
             if (state.signals.isEmpty) {
-              return const Center(child: Text('No trading signals available.'));
+              return const Center(
+                child: Text(
+                  'No trading signals available.',
+                ),
+              );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.signals.length,
-              itemBuilder: (context, index) {
-                final signal = state.signals[index];
-
-                return SignalCard(
-                  signal: signal,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SignalDetailsPage(signal: signal),
-                      ),
-                    );
-                  },
-                );
+            return RefreshIndicator(
+              onRefresh: () async {
+                _loadSignals();
               },
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: state.signals.length,
+                itemBuilder: (context, index) {
+                  final signal = state.signals[index];
+
+                  return SignalCard(
+                    signal: signal,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SignalDetailsPage(
+                            signal: signal,
+                          ),
+                        ),
+                      );
+
+                      // Reload signals when returning
+                      // from Signal Details.
+                      if (mounted) {
+                        _loadSignals();
+                      }
+                    },
+                  );
+                },
+              ),
             );
           }
 
-          return const SizedBox();
+          // If the BLoC is in a details or AI state,
+          // reload the signals instead of showing a blank page.
+          if (state is TradingSignalDetailsLoaded ||
+              state is AiSignalConfirmationLoading ||
+              state is AiSignalConfirmationLoaded ||
+              state is AiSignalConfirmationFailure) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _loadSignals();
+              }
+            });
+
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
         },
       ),
     );

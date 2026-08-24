@@ -9,3 +9,9 @@ final class LoadTradingSignalDetails extends TradingSignalEvent {
 
   LoadTradingSignalDetails(this.signalId);
 }
+
+final class LoadAiSignalConfirmation extends TradingSignalEvent {
+  final int signalId;
+
+  LoadAiSignalConfirmation(this.signalId);
+}

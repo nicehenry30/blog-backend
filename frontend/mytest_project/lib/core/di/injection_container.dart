@@ -192,6 +192,14 @@ import 'package:mytest_project/features/auto_trading/domain/usecases/update_auto
 import 'package:mytest_project/features/auto_trading/presentation/bloc/auto_trading_bloc.dart';
 import 'package:mytest_project/features/auto_trading/domain/usecases/update_auto_trading_preferences.dart';
 
+import 'package:mytest_project/features/signals/domain/usecases/get_ai_signal_confirmation.dart';
+
+import 'package:mytest_project/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:mytest_project/features/profile/data/repository/profile_repository_impl.dart';
+import 'package:mytest_project/features/profile/domain/repository/profile_repository.dart';
+import 'package:mytest_project/features/profile/domain/usecases/get_profile.dart';
+import 'package:mytest_project/features/profile/domain/usecases/update_profile.dart';
+import 'package:mytest_project/features/profile/presentation/bloc/profile_bloc.dart';
 // ============================================================================
 // SERVICE LOCATOR
 // ============================================================================
@@ -447,14 +455,7 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ==========================================================================
-  // NOTIFICATIONS FEATURE
-  // ==========================================================================
-
-    // ==========================================================================
-  // NOTIFICATIONS FEATURE
-  // ==========================================================================
-
+ 
   // --------------------------------------------------------------------------
   // Notification Remote Data Source
   // --------------------------------------------------------------------------
@@ -716,15 +717,24 @@ serviceLocator.registerLazySingleton<
   ),
 );
 
+serviceLocator.registerLazySingleton<
+    GetAiSignalConfirmation>(
+  () => GetAiSignalConfirmation(
+    serviceLocator(),
+  ),
+);
+
+
+
 // --------------------------------------------------------------------------
 // Signals BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<
-    TradingSignalBloc>(
+serviceLocator.registerFactory<TradingSignalBloc>(
   () => TradingSignalBloc(
     getTradingSignals: serviceLocator(),
     getTradingSignalDetails: serviceLocator(),
+    getAiConfirmation: serviceLocator(),
   ),
 );
 
@@ -919,6 +929,50 @@ serviceLocator.registerFactory(
     getAutoTradingStatus: serviceLocator(),
     updateAutoTrading: serviceLocator(),
     updateAutoTradingPreferences: serviceLocator(),
+  ),
+);
+
+// ==========================================================================
+// PROFILE
+// ==========================================================================
+
+serviceLocator.registerLazySingleton<ProfileRemoteDataSource>(
+  () => ProfileRemoteDataSourceImpl(
+    serviceLocator(),
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<ProfileRepository>(
+  () => ProfileRepositoryImpl(
+    serviceLocator(),
+  ),
+);
+
+// ==========================================================================
+// PROFILE USE CASES
+// ==========================================================================
+
+serviceLocator.registerLazySingleton<GetProfile>(
+  () => GetProfile(
+    serviceLocator(),
+  ),
+);
+
+serviceLocator.registerLazySingleton<UpdateProfile>(
+  () => UpdateProfile(
+    serviceLocator(),
+  ),
+);
+
+// ==========================================================================
+// PROFILE BLOC
+// ==========================================================================
+
+serviceLocator.registerFactory<ProfileBloc>(
+  () => ProfileBloc(
+    getProfile: serviceLocator(),
+    updateProfile: serviceLocator(),
   ),
 );
 

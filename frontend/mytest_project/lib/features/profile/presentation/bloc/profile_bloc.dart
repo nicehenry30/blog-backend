@@ -52,8 +52,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       (failure) => emit(
         ProfileFailure(failure.message),
       ),
-      (_) => emit(
-        ProfileUpdated(),
+      (profile) => emit(
+        ProfileUpdated(profile),
       ),
     );
   }

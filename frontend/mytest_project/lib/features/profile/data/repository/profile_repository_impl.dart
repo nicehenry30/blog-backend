@@ -6,6 +6,7 @@ import '../../domain/entities/profile.dart';
 import '../../domain/repository/profile_repository.dart';
 
 import '../datasources/profile_remote_data_source.dart';
+import '../models/profile_model.dart';
 
 class ProfileRepositoryImpl
     implements ProfileRepository {
@@ -24,25 +25,37 @@ class ProfileRepositoryImpl
       return Right(profile);
     } catch (e) {
       return Left(
-        const Failure(
-          'Failed to load profile.',
+        Failure(
+          'Failed to load profile: ${e.toString()}',
         ),
       );
     }
   }
 
   @override
-  Future<Either<Failure, void>> updateProfile(
+  Future<Either<Failure, Profile>> updateProfile(
     Profile profile,
   ) async {
     try {
-      await remoteDataSource.updateProfile(profile as dynamic);
+      final profileModel = ProfileModel(
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        subscription: profile.subscription,
+        mt4Connected: profile.mt4Connected,
+        mt5Connected: profile.mt5Connected,
+      );
 
-      return const Right(null);
+      final updatedProfile =
+          await remoteDataSource.updateProfile(
+        profileModel,
+      );
+
+      return Right(updatedProfile);
     } catch (e) {
       return Left(
-        const Failure(
-          'Failed to update profile.',
+        Failure(
+          'Failed to update profile: ${e.toString()}',
         ),
       );
     }

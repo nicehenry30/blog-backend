@@ -5,12 +5,15 @@ import 'package:http/http.dart' as http;
 import 'package:mytest_project/core/error/exceptions.dart';
 import 'package:mytest_project/core/storage/local_storage.dart';
 
+import '../models/ai_signal_confirmation_model.dart';
 import '../models/trading_signal_model.dart';
 
 abstract interface class TradingSignalRemoteDataSource {
   Future<List<TradingSignalModel>> getSignals();
 
-  Future<TradingSignalModel> getSignalDetails(
+  Future<TradingSignalModel> getSignalDetails(int signalId);
+
+  Future<AiSignalConfirmationModel> getAiConfirmation(
     int signalId,
   );
 }
@@ -44,13 +47,11 @@ class TradingSignalRemoteDataSourceImpl
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      final List signals =
-          data['data'] as List;
+      final List signals = data['data'] as List;
 
       return signals
           .map(
-            (json) =>
-                TradingSignalModel.fromJson(
+            (json) => TradingSignalModel.fromJson(
               json as Map<String, dynamic>,
             ),
           )
@@ -58,9 +59,8 @@ class TradingSignalRemoteDataSourceImpl
     }
 
     throw ServerException(
-      message:
-          data['message'] ??
-              'Failed to retrieve signals.',
+      message: data['message'] ??
+          'Failed to retrieve signals.',
     );
   }
 
@@ -71,9 +71,7 @@ class TradingSignalRemoteDataSourceImpl
     final token = localStorage.getToken();
 
     final response = await client.get(
-      Uri.parse(
-        '$baseUrl/signals/$signalId',
-      ),
+      Uri.parse('$baseUrl/signals/$signalId'),
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
@@ -89,10 +87,38 @@ class TradingSignalRemoteDataSourceImpl
     }
 
     throw ServerException(
-      message:
-          data['message'] ??
-              'Failed to retrieve signal.',
+      message: data['message'] ??
+          'Failed to retrieve signal.',
+    );
+  }
+
+  @override
+  Future<AiSignalConfirmationModel> getAiConfirmation(
+    int signalId,
+  ) async {
+    final token = localStorage.getToken();
+
+    final response = await client.get(
+      Uri.parse(
+        '$baseUrl/signals/$signalId/ai-confirmation',
+      ),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return AiSignalConfirmationModel.fromJson(
+        data['ai'] as Map<String, dynamic>,
+      );
+    }
+
+    throw ServerException(
+      message: data['message'] ??
+          'Failed to retrieve AI confirmation.',
     );
   }
 }
-

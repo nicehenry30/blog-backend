@@ -1,7 +1,9 @@
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 
+import '../../domain/entities/ai_signal_confirmation.dart';
 import '../../domain/entities/trading_signal.dart';
 import '../../domain/repository/trading_signal_repository.dart';
 
@@ -21,6 +23,10 @@ class TradingSignalRepositoryImpl
       final signals = await remoteDataSource.getSignals();
 
       return Right(signals);
+    } on ServerException catch (e) {
+      return Left(
+        Failure(e.message),
+      );
     } catch (e) {
       return Left(
         Failure(e.toString()),
@@ -33,11 +39,35 @@ class TradingSignalRepositoryImpl
     int signalId,
   ) async {
     try {
-      final signal = await remoteDataSource.getSignalDetails(
-        signalId,
-      );
+      final signal =
+          await remoteDataSource.getSignalDetails(signalId);
 
       return Right(signal);
+    } on ServerException catch (e) {
+      return Left(
+        Failure(e.message),
+      );
+    } catch (e) {
+      return Left(
+        Failure(e.toString()),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, AiSignalConfirmation>>
+      getAiConfirmation(
+    int signalId,
+  ) async {
+    try {
+      final confirmation =
+          await remoteDataSource.getAiConfirmation(signalId);
+
+      return Right(confirmation);
+    } on ServerException catch (e) {
+      return Left(
+        Failure(e.message),
+      );
     } catch (e) {
       return Left(
         Failure(e.toString()),

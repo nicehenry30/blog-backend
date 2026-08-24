@@ -1,38 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:mytest_project/core/di/injection_container.dart';
-import 'package:mytest_project/features/guardian/domain/entities/guardian_account.dart';
-import 'package:mytest_project/features/guardian/presentation/bloc/guardian_bloc.dart';
+import '../bloc/guardian_bloc.dart';
 
-class GuardianPage extends StatelessWidget {
-  const GuardianPage({super.key});
+class GuardianPage extends StatefulWidget {
+  final String platform;
+
+  const GuardianPage({
+    super.key,
+    required this.platform,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => serviceLocator<GuardianBloc>()
-        ..add(GuardianLoadRequested()),
-      child: const _GuardianView(),
-    );
-  }
+  State<GuardianPage> createState() => _GuardianPageState();
 }
 
-class _GuardianView extends StatelessWidget {
-  const _GuardianView();
-
+class _GuardianPageState extends State<GuardianPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Account Guardian',
-          style: TextStyle(
+        title: Text(
+          '${widget.platform} Guardian',
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
-      body: BlocBuilder<GuardianBloc, GuardianState>(
+      body: BlocConsumer<GuardianBloc, GuardianState>(
+        listener: (context, state) {
+          if (state is GuardianConnectionCodeGenerated) {
+            _showConnectionCode(
+              context,
+              state.code,
+            );
+          }
+
+          if (state is GuardianDisconnected) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Guardian disconnected successfully.',
+                ),
+              ),
+            );
+          }
+
+          if (state is GuardianFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           if (state is GuardianLoading) {
             return const Center(
@@ -40,185 +62,214 @@ class _GuardianView extends StatelessWidget {
             );
           }
 
-          if (state is GuardianDisconnecting) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          if (state is GuardianFailure) {
+            return _ErrorView(
+              message: state.message,
+              onRetry: () {
+                context.read<GuardianBloc>().add(
+                      GuardianLoadRequested(),
+                    );
+              },
+            );
+          }
+
+          if (state is GuardianLoaded) {
+            final account = state.account;
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<GuardianBloc>().add(
+                      GuardianLoadRequested(),
+                    );
+              },
+              child: ListView(
+                physics:
+                    const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Disconnecting Guardian...',
+                  _StatusCard(
+                    platform: widget.platform,
+                    connected: account.isConnected,
                   ),
+
+                  const SizedBox(height: 20),
+
+                  if (account.isConnected)
+                    _ConnectedAccountCard(
+                      accountNumber:
+                          account.accountNumber,
+                      broker: account.broker,
+                      balance: account.balance,
+                      equity: account.equity,
+                      drawdown:
+                          account.currentDrawdown,
+                      openPositions:
+                          account.openPositions,
+                      dailyProfitLoss:
+                          account.dailyProfitLoss,
+                    )
+                  else
+                    _NotConnectedCard(
+                      platform: widget.platform,
+                      onConnect: () {
+                        context
+                            .read<GuardianBloc>()
+                            .add(
+                            GuardianConnectionCodeRequested(
+                                platform: widget.platform,
+                              ),
+                            );
+                      },
+                    ),
+
+                  if (account.isConnected) ...[
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            state is GuardianDisconnecting
+                                ? null
+                                : () {
+                                    _confirmDisconnect(
+                                      context,
+                                    );
+                                  },
+                        icon: const Icon(
+                          Icons.link_off,
+                        ),
+                        label: state
+                                is GuardianDisconnecting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child:
+                                    CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Disconnect Guardian',
+                              ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
           }
 
-          if (state is GuardianFailure) {
-            return _GuardianError(
-              message: state.message,
+          if (state
+              is GuardianConnectionCodeLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
             );
           }
 
-          if (state is GuardianConnectionCodeLoading) {
-            return const _NotConnectedView();
-          }
-
-          if (state is GuardianConnectionCodeGenerated) {
+          if (state
+              is GuardianConnectionCodeGenerated) {
             return _ConnectionCodeView(
-              code: state.code,
               platform: state.platform,
+              code: state.code,
+              onDone: () {
+                context.read<GuardianBloc>().add(
+                      GuardianLoadRequested(),
+                    );
+              },
             );
           }
 
-          if (state is GuardianLoaded) {
-            return _GuardianContent(
-              account: state.account,
-            );
-          }
-
-          return const SizedBox.shrink();
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
         },
       ),
     );
   }
-}
 
-class _GuardianContent extends StatelessWidget {
-  final GuardianAccount account;
+  void _showConnectionCode(
+    BuildContext context,
+    String code,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text(
+            'Connection Code',
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter this code in your Tradewisser Guardian EA.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              SelectableText(
+                code,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: code),
+                  );
 
-  const _GuardianContent({
-    required this.account,
-  });
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!account.isConnected) {
-      return const _NotConnectedView();
-    }
+                  ScaffoldMessenger.of(
+                    dialogContext,
+                  ).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Connection code copied.',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(
+                  Icons.copy,
+                ),
+                label: const Text(
+                  'Copy Code',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
 
-    final theme = Theme.of(context);
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<GuardianBloc>().add(
-              GuardianLoadRequested(),
-            );
+                context.read<GuardianBloc>().add(
+                      GuardianLoadRequested(),
+                    );
+              },
+              child: const Text(
+                'Done',
+              ),
+            ),
+          ],
+        );
       },
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _StatusCard(
-            account: account,
-          ),
-
-          const SizedBox(height: 24),
-
-          const Text(
-            'Account Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          _MetricCard(
-            title: 'Balance',
-            value: account.balance.toStringAsFixed(2),
-            icon: Icons.account_balance_wallet_outlined,
-          ),
-
-          const SizedBox(height: 12),
-
-          _MetricCard(
-            title: 'Equity',
-            value: account.equity.toStringAsFixed(2),
-            icon: Icons.show_chart,
-          ),
-
-          const SizedBox(height: 12),
-
-          _MetricCard(
-            title: 'Current Drawdown',
-            value:
-                '${account.currentDrawdown.toStringAsFixed(2)}%',
-            icon: Icons.trending_down,
-          ),
-
-          const SizedBox(height: 12),
-
-          _MetricCard(
-            title: 'Open Positions',
-            value: account.openPositions.toString(),
-            icon: Icons.swap_vert,
-          ),
-
-          const SizedBox(height: 12),
-
-          _MetricCard(
-            title: 'Daily P/L',
-            value:
-                account.dailyProfitLoss.toStringAsFixed(2),
-            icon: Icons.payments_outlined,
-          ),
-
-          const SizedBox(height: 28),
-
-          const Divider(),
-
-          const SizedBox(height: 16),
-
-          OutlinedButton.icon(
-            onPressed: () {
-              _showDisconnectConfirmation(
-                context,
-                account,
-              );
-            },
-            icon: const Icon(
-              Icons.link_off,
-            ),
-            label: const Text(
-              'Disconnect Trading Account',
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: theme.colorScheme.error,
-              side: BorderSide(
-                color: theme.colorScheme.error,
-              ),
-              padding: const EdgeInsets.symmetric(
-                vertical: 14,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            'Disconnecting will stop Guardian protection for this trading account.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(
-                alpha: 0.60,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-        ],
-      ),
     );
   }
 
-  Future<void> _showDisconnectConfirmation(
+  void _confirmDisconnect(
     BuildContext context,
-    GuardianAccount account,
-  ) async {
-    final shouldDisconnect =
-        await showDialog<bool>(
+  ) {
+    showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
@@ -226,18 +277,13 @@ class _GuardianContent extends StatelessWidget {
             'Disconnect Guardian?',
           ),
           content: Text(
-            'Are you sure you want to disconnect '
-            '${account.platform} account '
-            '${account.accountNumber ?? ''}?\n\n'
-            'Guardian protection will stop for '
-            'this trading account.',
+            'This will disconnect your ${widget.platform} '
+            'Guardian account from Tradewisser.',
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop(
-                  false,
-                );
+                Navigator.pop(dialogContext);
               },
               child: const Text(
                 'Cancel',
@@ -245,16 +291,12 @@ class _GuardianContent extends StatelessWidget {
             ),
             FilledButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop(
-                  true,
-                );
+                Navigator.pop(dialogContext);
+
+                context.read<GuardianBloc>().add(
+                      GuardianDisconnectRequested(),
+                    );
               },
-              style: FilledButton.styleFrom(
-                backgroundColor:
-                    Theme.of(dialogContext)
-                        .colorScheme
-                        .error,
-              ),
               child: const Text(
                 'Disconnect',
               ),
@@ -263,444 +305,347 @@ class _GuardianContent extends StatelessWidget {
         );
       },
     );
-
-    if (shouldDisconnect != true) {
-      return;
-    }
-
-    if (!context.mounted) {
-      return;
-    }
-
-    context.read<GuardianBloc>().add(
-          GuardianDisconnectRequested(),
-        );
   }
 }
 
-class _NotConnectedView extends StatelessWidget {
-  const _NotConnectedView();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 30),
-
-          Center(
-            child: Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(
-                  alpha: 0.08,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.shield_outlined,
-                size: 44,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          Text(
-            'Guardian Not Connected',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          Text(
-            'Connect an MT4 or MT5 trading account to monitor your account and enable Guardian protection.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(
-                alpha: 0.65,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          BlocBuilder<GuardianBloc, GuardianState>(
-            builder: (context, state) {
-              final isGenerating =
-                  state is GuardianConnectionCodeLoading;
-
-              return ElevatedButton.icon(
-                onPressed: isGenerating
-                    ? null
-                    : () {
-                        _showPlatformSelector(
-                          context,
-                        );
-                      },
-                icon: isGenerating
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.add_link,
-                      ),
-                label: Text(
-                  isGenerating
-                      ? 'Generating Code...'
-                      : 'Connect Trading Account',
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
-          Text(
-            'Choose MT4 or MT5 to generate a temporary Guardian connection code.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPlatformSelector(
-    BuildContext context,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Choose Trading Platform',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                ListTile(
-                  leading: const Icon(
-                    Icons.desktop_windows_outlined,
-                  ),
-                  title: const Text(
-                    'MetaTrader 4',
-                  ),
-                  subtitle: const Text(
-                    'MT4 Guardian',
-                  ),
-                  onTap: () {
-                    Navigator.pop(
-                      sheetContext,
-                    );
-
-                    context.read<GuardianBloc>().add(
-                          GuardianConnectionCodeRequested(
-                            platform: 'MT4',
-                          ),
-                        );
-                  },
-                ),
-
-                const Divider(),
-
-                ListTile(
-                  leading: const Icon(
-                    Icons.desktop_windows_outlined,
-                  ),
-                  title: const Text(
-                    'MetaTrader 5',
-                  ),
-                  subtitle: const Text(
-                    'MT5 Guardian',
-                  ),
-                  onTap: () {
-                    Navigator.pop(
-                      sheetContext,
-                    );
-
-                    context.read<GuardianBloc>().add(
-                          GuardianConnectionCodeRequested(
-                            platform: 'MT5',
-                          ),
-                        );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ConnectionCodeView extends StatelessWidget {
-  final String code;
-  final String platform;
-
-  const _ConnectionCodeView({
-    required this.code,
-    required this.platform,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(
-                alpha: 0.08,
-              ),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.link,
-              size: 44,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          Text(
-            '$platform Connection Code',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          Text(
-            'Enter this code into your Tradewisser $platform Guardian EA.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(
-                alpha: 0.65,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 24,
-            ),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(
-                  alpha: 0.30,
-                ),
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  code,
-                  textAlign: TextAlign.center,
-                  style:
-                      theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 3,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  'Valid for 15 minutes',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                context.read<GuardianBloc>().add(
-                      GuardianLoadRequested(),
-                    );
-              },
-              icon: const Icon(
-                Icons.arrow_back,
-              ),
-              label: const Text(
-                'Back to Guardian',
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ============================================================================
+// STATUS CARD
+// ============================================================================
 
 class _StatusCard extends StatelessWidget {
-  final GuardianAccount account;
+  final String platform;
+  final bool connected;
 
   const _StatusCard({
-    required this.account,
+    required this.platform,
+    required this.connected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(
-            alpha: 0.18,
-          ),
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: connected
+              ? [
+                  Colors.green.shade700,
+                  Colors.green.shade900,
+                ]
+              : [
+                  Colors.orange.shade700,
+                  Colors.deepOrange.shade900,
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.shield_outlined,
-              ),
-
-              const SizedBox(width: 10),
-
-              Expanded(
-                child: Text(
-                  'Guardian Status',
-                  style:
-                      theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              Text(
-                account.isEnabled
-                    ? 'Protected'
-                    : 'Disabled',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: account.isEnabled
-                      ? Colors.green
-                      : theme.colorScheme.error,
-                ),
-              ),
-            ],
+          Icon(
+            connected
+                ? Icons.shield
+                : Icons.shield_outlined,
+            size: 60,
+            color: Colors.white,
           ),
-
-          const SizedBox(height: 18),
-
+          const SizedBox(height: 14),
           Text(
-            '${account.platform} • '
-            '${account.accountNumber ?? 'Unknown Account'}',
-          ),
-
-          if (account.broker != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              account.broker!,
-              style: theme.textTheme.bodySmall,
+            '$platform Guardian',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-          ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            connected
+                ? 'Connected and monitoring'
+                : 'Not Connected',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
+// ============================================================================
+// NOT CONNECTED
+// ============================================================================
 
-  const _MetricCard({
-    required this.title,
-    required this.value,
-    required this.icon,
+class _NotConnectedCard extends StatelessWidget {
+  final String platform;
+  final VoidCallback onConnect;
+
+  const _NotConnectedCard({
+    required this.platform,
+    required this.onConnect,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(
-            alpha: 0.18,
-          ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.link_off,
+              size: 50,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Guardian is not connected',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Connect your $platform trading account '
+              'using the Tradewisser Guardian EA.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onConnect,
+                icon: const Icon(
+                  Icons.link,
+                ),
+                label: Text(
+                  'Connect $platform',
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+// ============================================================================
+// CONNECTION CODE
+// ============================================================================
+
+class _ConnectionCodeView extends StatelessWidget {
+  final String platform;
+  final String code;
+  final VoidCallback onDone;
+
+  const _ConnectionCodeView({
+    required this.platform,
+    required this.code,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.vpn_key,
+              size: 70,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '$platform Connection Code',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Enter this code in your Guardian EA.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+            SelectableText(
+              code,
+              style: const TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(
+                  ClipboardData(text: code),
+                );
+
+                if (!context.mounted) return;
+
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Connection code copied.',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.copy,
+              ),
+              label: const Text(
+                'Copy Code',
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: onDone,
+              child: const Text(
+                'Done',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// CONNECTED ACCOUNT
+// ============================================================================
+
+class _ConnectedAccountCard
+    extends StatelessWidget {
+  final String? accountNumber;
+  final String? broker;
+  final double balance;
+  final double equity;
+  final double drawdown;
+  final int openPositions;
+  final double dailyProfitLoss;
+
+  const _ConnectedAccountCard({
+    required this.accountNumber,
+    required this.broker,
+    required this.balance,
+    required this.equity,
+    required this.drawdown,
+    required this.openPositions,
+    required this.dailyProfitLoss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Account Information',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            _InfoRow(
+              label: 'Account',
+              value:
+                  accountNumber ?? 'Unknown',
+            ),
+
+            _InfoRow(
+              label: 'Broker',
+              value: broker ?? 'Unknown',
+            ),
+
+            _InfoRow(
+              label: 'Balance',
+              value:
+                  balance.toStringAsFixed(2),
+            ),
+
+            _InfoRow(
+              label: 'Equity',
+              value:
+                  equity.toStringAsFixed(2),
+            ),
+
+            _InfoRow(
+              label: 'Drawdown',
+              value:
+                  '${drawdown.toStringAsFixed(2)}%',
+            ),
+
+            _InfoRow(
+              label: 'Open Positions',
+              value:
+                  openPositions.toString(),
+            ),
+
+            _InfoRow(
+              label: 'Daily P/L',
+              value:
+                  dailyProfitLoss
+                      .toStringAsFixed(2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// INFO ROW
+// ============================================================================
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: theme.colorScheme.primary,
-          ),
-
-          const SizedBox(width: 14),
-
           Expanded(
             child: Text(
-              title,
-              style: theme.textTheme.bodyMedium,
+              label,
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
             ),
           ),
-
           Text(
             value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -709,11 +654,17 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _GuardianError extends StatelessWidget {
-  final String message;
+// ============================================================================
+// ERROR
+// ============================================================================
 
-  const _GuardianError({
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorView({
     required this.message,
+    required this.onRetry,
   });
 
   @override
@@ -726,26 +677,18 @@ class _GuardianError extends StatelessWidget {
           children: [
             const Icon(
               Icons.error_outline,
-              size: 48,
+              size: 60,
             ),
-
             const SizedBox(height: 16),
-
             Text(
               message,
               textAlign: TextAlign.center,
             ),
-
             const SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: () {
-                context.read<GuardianBloc>().add(
-                      GuardianLoadRequested(),
-                    );
-              },
+            FilledButton(
+              onPressed: onRetry,
               child: const Text(
-                'Try Again',
+                'Retry',
               ),
             ),
           ],
