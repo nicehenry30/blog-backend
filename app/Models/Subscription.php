@@ -17,15 +17,29 @@ class Subscription extends Model
         'status',
         'starts_at',
         'expires_at',
+        'next_billing_at',
         'cancelled_at',
         'auto_renew',
+
+        'is_trial',
+        'trial_ends_at',
+
+        'payment_provider',
+        'payment_method_id',
+        'payment_method_verified',
+        'payment_method_reference',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'expires_at' => 'datetime',
+        'next_billing_at' => 'datetime',
         'cancelled_at' => 'datetime',
+
         'auto_renew' => 'boolean',
+        'is_trial' => 'boolean',
+        'trial_ends_at' => 'datetime',
+        'payment_method_verified' => 'boolean',
     ];
 
     /**

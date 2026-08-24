@@ -65,12 +65,18 @@ class PaymentController extends Controller
             ],
         ]);
 
-        return response()->json(
-            $this->paymentService->initialize(
+        try {
+            $payment = $this->paymentService->initialize(
                 $request->user(),
-                $validated['plan_id']
-            )
-        );
+                (int) $validated['plan_id']
+            );
+
+            return response()->json($payment);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -115,7 +121,8 @@ class PaymentController extends Controller
                 'message' => 'Payment verified successfully.',
                 'subscription' => $payment
                     ->subscription
-                    ->fresh(),
+                    ->fresh()
+                    ->load('plan'),
             ]);
         }
 

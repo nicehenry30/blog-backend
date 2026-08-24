@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Http;
 
 class PaystackService
 {
@@ -17,18 +17,42 @@ class PaystackService
             $response = Http::withToken(
                 config('services.paystack.secret_key')
             )
-            ->timeout(30)
-            ->acceptJson()
-            ->post(
-                config('services.paystack.base_url') . '/transaction/initialize',
-                [
-                    'email' => $data['email'],
-                    'amount' => $data['amount'], // Kobo
-                    'reference' => $data['reference'],
-                    'callback_url' => $data['callback_url'],
-                    'metadata' => $data['metadata'] ?? [],
-                ]
-            );
+                ->timeout(30)
+                ->acceptJson()
+                ->post(
+                    config('services.paystack.base_url')
+                    . '/transaction/initialize',
+                    [
+                        'email' => $data['email'],
+
+                        /*
+                         * Amount must be sent in the
+                         * smallest unit of the currency.
+                         *
+                         * USD:
+                         * $19.99 = 1999 cents
+                         *
+                         * NGN:
+                         * ₦19.99 = 1999 kobo
+                         */
+                        'amount' => $data['amount'],
+
+                        /*
+                         * Explicitly specify the currency.
+                         *
+                         * Example:
+                         * USD
+                         * NGN
+                         */
+                        'currency' => $data['currency'],
+
+                        'reference' => $data['reference'],
+
+                        'callback_url' => $data['callback_url'],
+
+                        'metadata' => $data['metadata'] ?? [],
+                    ]
+                );
 
             $response->throw();
 
@@ -36,10 +60,24 @@ class PaystackService
 
         } catch (RequestException $e) {
 
+            $paystackResponse =
+                $e->response?->json();
+
             return [
                 'status' => false,
-                'message' => 'Unable to initialize payment.',
-                'error' => $e->response?->json(),
+
+                /*
+                 * Return Paystack's actual error message.
+                 */
+                'message' =>
+                    $paystackResponse['message']
+                    ?? 'Unable to initialize payment.',
+
+                /*
+                 * Keep the complete Paystack response
+                 * available for debugging.
+                 */
+                'error' => $paystackResponse,
             ];
         }
     }
@@ -47,19 +85,20 @@ class PaystackService
     /**
      * Verify a Paystack transaction.
      */
-    public function verifyTransaction(string $reference): array
-    {
+    public function verifyTransaction(
+        string $reference
+    ): array {
         try {
 
             $response = Http::withToken(
                 config('services.paystack.secret_key')
             )
-            ->timeout(30)
-            ->acceptJson()
-            ->get(
-                config('services.paystack.base_url')
-                . "/transaction/verify/{$reference}"
-            );
+                ->timeout(30)
+                ->acceptJson()
+                ->get(
+                    config('services.paystack.base_url')
+                    . "/transaction/verify/{$reference}"
+                );
 
             $response->throw();
 
@@ -67,10 +106,24 @@ class PaystackService
 
         } catch (RequestException $e) {
 
+            $paystackResponse =
+                $e->response?->json();
+
             return [
                 'status' => false,
-                'message' => 'Unable to verify payment.',
-                'error' => $e->response?->json(),
+
+                /*
+                 * Return Paystack's actual error message.
+                 */
+                'message' =>
+                    $paystackResponse['message']
+                    ?? 'Unable to verify payment.',
+
+                /*
+                 * Keep the complete response
+                 * available for debugging.
+                 */
+                'error' => $paystackResponse,
             ];
         }
     }

@@ -13,7 +13,6 @@ class PlanResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-
             'id' => $this->id,
 
             'name' => $this->name,
@@ -28,13 +27,14 @@ class PlanResource extends JsonResource
 
             'billing_cycle' => $this->billing_cycle,
 
-            'is_active' => $this->is_active,
+            'is_active' => (bool) $this->is_active,
+
+            'sort_order' => (int) $this->sort_order,
 
             'features' => $this->features
                 ->where('enabled', true)
                 ->pluck('feature')
                 ->values(),
-
         ];
     }
 }

@@ -55,10 +55,9 @@ class SubscriptionRemoteDataSourceImpl
     );
   }
 
-  @override
-  Future<SubscriptionModel>
-      getCurrentSubscription() async {
-   final token = localStorage.getToken();
+    @override
+  Future<SubscriptionModel> getCurrentSubscription() async {
+    final token = localStorage.getToken();
 
     final response = await client.get(
       Uri.parse('$baseUrl/subscription'),
@@ -72,14 +71,18 @@ class SubscriptionRemoteDataSourceImpl
 
     if (response.statusCode == 200) {
       return SubscriptionModel.fromJson(
-        data['data'],
+        data['subscription'] as Map<String, dynamic>,
+      );
+    }
+
+    if (response.statusCode == 404) {
+      throw ServerException(
+        message: 'No active subscription found.',
       );
     }
 
     throw ServerException(
-      message:
-          data['message'] ??
-          'Failed to load subscription',
+      message: data['message'] ?? 'Failed to load subscription',
     );
   }
 
@@ -107,9 +110,8 @@ class SubscriptionRemoteDataSourceImpl
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      return data['data']
-          ['authorization_url'];
-    }
+  return data['authorization_url'];
+}
 
     throw ServerException(
       message:

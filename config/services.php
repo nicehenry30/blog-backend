@@ -9,8 +9,7 @@ return [
     |
     | This file is for storing the credentials for third party services such
     | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
+    | location for this type of service.
     |
     */
 
@@ -24,41 +23,83 @@ return [
 
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
+
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
-        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+
+        'region' => env(
+            'AWS_DEFAULT_REGION',
+            'us-east-1'
+        ),
     ],
 
     'slack' => [
         'notifications' => [
-            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+
+            'bot_user_oauth_token' =>
+                env('SLACK_BOT_USER_OAUTH_TOKEN'),
+
+            'channel' =>
+                env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Paystack
+    |--------------------------------------------------------------------------
+    */
+
     'paystack' => [
 
-    'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        'secret_key' =>
+            env('PAYSTACK_SECRET_KEY'),
 
-    'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'public_key' =>
+            env('PAYSTACK_PUBLIC_KEY'),
 
-    'base_url' => env(
-        'PAYSTACK_PAYMENT_URL',
-        'https://api.paystack.co'
-    ),
+        'base_url' =>
+            env(
+                'PAYSTACK_PAYMENT_URL',
+                'https://api.paystack.co'
+            ),
 
-],
+        /*
+         * Currency supported by the Paystack merchant account.
+         *
+         * Tradewisser subscription prices are stored in USD.
+         *
+         * ExchangeRateService converts:
+         *
+         * USD → NGN
+         *
+         * before sending the payment to Paystack.
+         */
+        'merchant_currency' =>
+            env(
+                'PAYSTACK_MERCHANT_CURRENCY',
+                'NGN'
+            ),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | NOWPayments
+    |--------------------------------------------------------------------------
+    */
 
     'nowpayments' => [
 
-        'api_key' => env('NOWPAYMENTS_API_KEY'),
+        'api_key' =>
+            env('NOWPAYMENTS_API_KEY'),
 
-        'ipn_secret' => env('NOWPAYMENTS_IPN_SECRET'),
+        'ipn_secret' =>
+            env('NOWPAYMENTS_IPN_SECRET'),
 
-        'base_url' => env(
-            'NOWPAYMENTS_BASE_URL',
-            'https://api.nowpayments.io'
-        ),
-
+        'base_url' =>
+            env(
+                'NOWPAYMENTS_BASE_URL',
+                'https://api.nowpayments.io'
+            ),
     ],
 
 ];

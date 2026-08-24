@@ -18,6 +18,8 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\UserSettingController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\TrialController;
 // =====================================================================
 // PUBLIC AUTH ROUTES
 // =====================================================================
@@ -77,6 +79,21 @@ Route::middleware('auth:sanctum')->group(function () {
             'user' => $request->user(),
         ]);
     });
+
+    Route::put('/profile', [
+    ProfileController::class,
+    'update',
+    ]);
+
+    Route::get('/profile', [
+    ProfileController::class,
+    'show',
+    ]);
+
+    Route::put('/profile', [
+    ProfileController::class,
+    'update',
+    ]);
 
     // ================================================================
     // TRADES
@@ -300,6 +317,16 @@ Route::middleware('auth:sanctum')->group(function () {
     '/settings/auto-trading/preferences',
     [UserSettingController::class, 'updatePreferences']
     );
+
+    Route::post('/subscription/trial', [
+    TrialController::class,
+    'start',
+    ]);
+
+    Route::get('/subscription/trial', [
+    TrialController::class,
+    'current',
+    ]);
 
 
 });

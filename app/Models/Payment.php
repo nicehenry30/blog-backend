@@ -11,22 +11,34 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'subscription_id',
-        'user_id',
-        'amount',
-        'currency',
-        'gateway',
-        'reference',
-        'transaction_id',
-        'status',
-        'gateway_response',
-        'paid_at',
+    'subscription_id',
+    'user_id',
+
+    /*
+     * Original application price.
+     */
+    'amount',
+    'currency',
+
+    /*
+     * Actual gateway amount/currency.
+     */
+    'gateway_amount',
+    'gateway_currency',
+
+    'gateway',
+    'reference',
+    'transaction_id',
+    'status',
+    'gateway_response',
+    'paid_at',
     ];
 
-    protected $casts = [
-        'amount' => 'decimal:2',
-        'gateway_response' => 'array',
-        'paid_at' => 'datetime',
+     protected $casts = [
+    'amount' => 'decimal:2',
+    'gateway_amount' => 'decimal:2',
+    'gateway_response' => 'array',
+    'paid_at' => 'datetime',
     ];
 
     /**

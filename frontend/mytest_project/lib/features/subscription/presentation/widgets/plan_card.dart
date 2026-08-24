@@ -149,35 +149,35 @@ class PlanCard extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 28),
-
-                SizedBox(
+                  SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
                     onPressed:
-                        isCurrentPlan
+                        isCurrentPlan || plan.isFree
                             ? null
                             : onPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: color,
-                      foregroundColor:
-                          Colors.white,
-                      shape:
-                          RoundedRectangleBorder(
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor:
+                          Colors.grey.shade300,
+                      disabledForegroundColor:
+                          Colors.grey.shade600,
+                      shape: RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius.circular(
-                          14,
-                        ),
+                            BorderRadius.circular(14),
                       ),
                     ),
                     child: Text(
                       isCurrentPlan
                           ? 'Current Plan'
-                          : _buttonText(),
+                          : plan.isFree
+                              ? 'Free Forever'
+                              : _buttonText(),
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
