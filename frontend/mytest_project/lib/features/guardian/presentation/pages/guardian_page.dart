@@ -15,8 +15,18 @@ class GuardianPage extends StatefulWidget {
   @override
   State<GuardianPage> createState() => _GuardianPageState();
 }
-
 class _GuardianPageState extends State<GuardianPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    context.read<GuardianBloc>().add(
+  GuardianLoadRequested(
+    platform: widget.platform,
+  ),
+  );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,8 +77,10 @@ class _GuardianPageState extends State<GuardianPage> {
               message: state.message,
               onRetry: () {
                 context.read<GuardianBloc>().add(
-                      GuardianLoadRequested(),
-                    );
+                  GuardianLoadRequested(
+                    platform: widget.platform,
+                  ),
+                );
               },
             );
           }
@@ -78,9 +90,11 @@ class _GuardianPageState extends State<GuardianPage> {
 
             return RefreshIndicator(
               onRefresh: () async {
-                context.read<GuardianBloc>().add(
-                      GuardianLoadRequested(),
-                    );
+               context.read<GuardianBloc>().add(
+                  GuardianLoadRequested(
+                    platform: widget.platform,
+                  ),
+                );
               },
               child: ListView(
                 physics:
@@ -173,9 +187,11 @@ class _GuardianPageState extends State<GuardianPage> {
               platform: state.platform,
               code: state.code,
               onDone: () {
-                context.read<GuardianBloc>().add(
-                      GuardianLoadRequested(),
-                    );
+               context.read<GuardianBloc>().add(
+                  GuardianLoadRequested(
+                    platform: widget.platform,
+                  ),
+                );
               },
             );
           }
@@ -252,10 +268,12 @@ class _GuardianPageState extends State<GuardianPage> {
               onPressed: () {
                 Navigator.pop(dialogContext);
 
-                context.read<GuardianBloc>().add(
-                      GuardianLoadRequested(),
-                    );
-              },
+               context.read<GuardianBloc>().add(
+                  GuardianLoadRequested(
+                    platform: widget.platform,
+                  ),
+                );
+               },
               child: const Text(
                 'Done',
               ),
@@ -294,8 +312,10 @@ class _GuardianPageState extends State<GuardianPage> {
                 Navigator.pop(dialogContext);
 
                 context.read<GuardianBloc>().add(
-                      GuardianDisconnectRequested(),
-                    );
+                  GuardianDisconnectRequested(
+                    platform: widget.platform,
+                  ),
+                );
               },
               child: const Text(
                 'Disconnect',

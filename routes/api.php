@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\UserSettingController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\TrialController;
+use App\Http\Controllers\Api\ReferralController;
+use App\Http\Controllers\Api\FeedbackController;
 // =====================================================================
 // PUBLIC AUTH ROUTES
 // =====================================================================
@@ -33,6 +35,10 @@ Route::post('/login', [
     AuthController::class,
     'login',
 ]);
+
+// =====================================================================
+// GUARDIAN EA ROUTES
+// =====================================================================
 
 // =====================================================================
 // GUARDIAN EA ROUTES
@@ -53,12 +59,20 @@ Route::get('/guardian/risk-settings', [
     'riskSettings',
 ]);
 
+Route::get('/guardian/auto-trading-settings', [
+    GuardianController::class,
+    'autoTradingSettings',
+]);
+
+Route::get('/guardian/signals', [
+    GuardianController::class,
+    'signals',
+]);
+
 Route::post('/guardian/auto-trade/result', [
     GuardianController::class,
     'autoTradeResult',
 ]);
-
-
 // =====================================================================
 // AUTHENTICATED ROUTES
 // =====================================================================
@@ -88,11 +102,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [
     ProfileController::class,
     'show',
-    ]);
-
-    Route::put('/profile', [
-    ProfileController::class,
-    'update',
     ]);
 
     // ================================================================
@@ -311,6 +320,16 @@ Route::middleware('auth:sanctum')->group(function () {
         'destroy',
     ]);
 
+    Route::post(
+    '/payments/crypto/initialize',
+    [PaymentController::class, 'initializeCrypto']
+    );
+    
+    Route::post(
+    '/payments/crypto/submit',
+    [PaymentController::class, 'submitCryptoTransaction']
+    );
+
     Route::get('/settings', [UserSettingController::class, 'show']);
     Route::put('/settings/auto-trading', [UserSettingController::class, 'updateAutoTrading']);
     Route::put(
@@ -326,6 +345,39 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/subscription/trial', [
     TrialController::class,
     'current',
+    ]);
+
+    // ================================================================
+    // REFERRALS
+    // ================================================================
+
+    Route::get('/referral', [
+        ReferralController::class,
+        'summary',
+    ]);
+
+    Route::get('/referrals', [
+        ReferralController::class,
+        'index',
+    ]);
+
+    // ================================================================
+    // FEEDBACK
+    // ================================================================
+
+    Route::get('/feedback', [
+        FeedbackController::class,
+        'index',
+    ]);
+
+    Route::post('/feedback', [
+        FeedbackController::class,
+        'store',
+    ]);
+
+    Route::get('/feedback/{feedback}', [
+        FeedbackController::class,
+        'show',
     ]);
 
 

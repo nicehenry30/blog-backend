@@ -7,13 +7,17 @@ import 'package:mytest_project/core/storage/local_storage.dart';
 import 'package:mytest_project/features/guardian/domain/entities/guardian_account.dart';
 
 abstract interface class GuardianRemoteDataSource {
-  Future<GuardianAccount> getGuardianAccount();
+  Future<GuardianAccount> getGuardianAccount(
+    String platform,
+  );
 
   Future<String> generateConnectionCode(
     String platform,
   );
 
-  Future<void> disconnectGuardian();
+  Future<void> disconnectGuardian(
+    String platform,
+  );
 }
 
 class GuardianRemoteDataSourceImpl
@@ -30,11 +34,15 @@ class GuardianRemoteDataSourceImpl
       'http://127.0.0.1:8000/api';
 
   @override
-  Future<GuardianAccount> getGuardianAccount() async {
+  Future<GuardianAccount> getGuardianAccount(
+    String platform,
+  ) async {
     final token = localStorage.getToken();
 
     final response = await client.get(
-      Uri.parse('$baseUrl/guardian'),
+      Uri.parse(
+        '$baseUrl/guardian?platform=$platform',
+      ),
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
@@ -46,7 +54,7 @@ class GuardianRemoteDataSourceImpl
     if (response.statusCode == 200) {
       return GuardianAccount(
         id: data['id'],
-        platform: data['platform'] ?? 'MT4',
+        platform: data['platform'] ?? platform,
         accountNumber:
             data['account_number']?.toString(),
         broker: data['broker'],
@@ -122,12 +130,14 @@ class GuardianRemoteDataSourceImpl
   }
 
   @override
-  Future<void> disconnectGuardian() async {
+  Future<void> disconnectGuardian(
+    String platform,
+  ) async {
     final token = localStorage.getToken();
 
     final response = await client.delete(
       Uri.parse(
-        '$baseUrl/guardian/disconnect',
+        '$baseUrl/guardian/disconnect?platform=$platform',
       ),
       headers: {
         'Accept': 'application/json',

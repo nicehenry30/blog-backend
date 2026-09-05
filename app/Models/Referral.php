@@ -11,6 +11,7 @@ class Referral extends Model
         'referrer_id',
         'referred_user_id',
         'referral_code',
+        'qualifying_payment_id',
         'reward_amount',
         'reward_currency',
         'status',
@@ -43,6 +44,17 @@ class Referral extends Model
         return $this->belongsTo(
             User::class,
             'referred_user_id'
+        );
+    }
+
+    /**
+     * Payment that qualified this referral.
+     */
+    public function qualifyingPayment(): BelongsTo
+    {
+        return $this->belongsTo(
+            Payment::class,
+            'qualifying_payment_id'
         );
     }
 }

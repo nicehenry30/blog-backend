@@ -62,8 +62,7 @@ class SubscriptionService
 
                 'auto_renew' => true,
 
-                'is_trial' => false,
-                'trial_started_at' => null,
+               'is_trial' => false,
                 'trial_ends_at' => null,
 
                 'payment_provider' => null,

@@ -21,12 +21,21 @@ class User extends Authenticatable
         'password',
         'referral_code',
         'referred_by_user_id',
+        'role',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    /**
+     * Determine whether the user is an administrator.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 
     public function trades(): HasMany
     {
@@ -56,6 +65,11 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function feedback(): HasMany
+    {
+        return $this->hasMany(Feedback::class);
     }
 
     public function hasActiveSubscription(): bool

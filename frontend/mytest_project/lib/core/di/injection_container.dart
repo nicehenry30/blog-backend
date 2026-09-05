@@ -200,6 +200,33 @@ import 'package:mytest_project/features/profile/domain/repository/profile_reposi
 import 'package:mytest_project/features/profile/domain/usecases/get_profile.dart';
 import 'package:mytest_project/features/profile/domain/usecases/update_profile.dart';
 import 'package:mytest_project/features/profile/presentation/bloc/profile_bloc.dart';
+
+import '../../features/referral/data/datasources/referral_remote_data_source.dart';
+import '../../features/referral/data/datasources/referral_remote_data_source_impl.dart';
+import '../../features/referral/data/repositories/referral_repository_impl.dart';
+import '../../features/referral/domain/repositories/referral_repository.dart';
+import '../../features/referral/domain/usecases/get_referral_summary.dart';
+import '../../features/referral/domain/usecases/get_referrals.dart';
+import '../../features/referral/presentation/bloc/referral_bloc.dart';
+
+// ==========================================================================
+// FEEDBACK FEATURE
+// ==========================================================================
+
+import 'package:mytest_project/features/feedback/data/datasources/feedback_remote_data_source.dart';
+import 'package:mytest_project/features/feedback/data/repository/feedback_repository_impl.dart';
+
+import 'package:mytest_project/features/feedback/domain/repository/feedback_repository.dart';
+
+import 'package:mytest_project/features/feedback/domain/usecases/get_feedback.dart';
+import 'package:mytest_project/features/feedback/domain/usecases/get_feedback_by_id.dart';
+import 'package:mytest_project/features/feedback/domain/usecases/submit_feedback.dart';
+
+import 'package:mytest_project/features/feedback/presentation/bloc/feedback_bloc.dart';
+
+import 'package:mytest_project/features/subscription/domain/usecases/initialize_crypto_payment.dart';
+import 'package:mytest_project/features/subscription/domain/usecases/submit_crypto_transaction.dart';
+
 // ============================================================================
 // SERVICE LOCATOR
 // ============================================================================
@@ -215,49 +242,49 @@ Future<void> initDependencies() async {
   // SHARED PREFERENCES
   // ==========================================================================
 
-  final sharedPreferences = await SharedPreferences.getInstance();
+    final sharedPreferences = await SharedPreferences.getInstance();
 
-  serviceLocator.registerLazySingleton<SharedPreferences>(
-    () => sharedPreferences,
-  );
+    serviceLocator.registerLazySingleton<SharedPreferences>(
+      () => sharedPreferences,
+    );
 
   // ==========================================================================
   // TRADING SETTINGS
   // ==========================================================================
 
-  serviceLocator.registerLazySingleton<TradingSettingsLocalDataSource>(
-    () => TradingSettingsLocalDataSource(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<TradingSettingsLocalDataSource>(
+      () => TradingSettingsLocalDataSource(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<TradingSettingsRepository>(
-    () => TradingSettingsRepositoryImpl(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<TradingSettingsRepository>(
+      () => TradingSettingsRepositoryImpl(serviceLocator()),
+    );
 
   // ==========================================================================
   // TRADING SETTINGS USE CASES
   // ==========================================================================
 
-  serviceLocator.registerLazySingleton<GetTradingSettings>(
-    () => GetTradingSettings(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<GetTradingSettings>(
+      () => GetTradingSettings(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<SaveTradingSettings>(
-    () => SaveTradingSettings(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<SaveTradingSettings>(
+      () => SaveTradingSettings(serviceLocator()),
+    );
 
   // ==========================================================================
   // LOCAL STORAGE
   // ==========================================================================
 
-  serviceLocator.registerLazySingleton<LocalStorage>(
-    () => LocalStorageImpl(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<LocalStorage>(
+      () => LocalStorageImpl(serviceLocator()),
+    );
 
   // ==========================================================================
   // HTTP CLIENT
   // ==========================================================================
 
-  serviceLocator.registerLazySingleton<http.Client>(() => http.Client());
+   serviceLocator.registerLazySingleton<http.Client>(() => http.Client());
 
   // ==========================================================================
   // AUTH FEATURE
@@ -267,61 +294,61 @@ Future<void> initDependencies() async {
   // Auth Remote Data Source
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Auth Repository
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(serviceLocator(), serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(serviceLocator(), serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Auth Use Cases
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<UserSignUp>(
-    () => UserSignUp(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<UserSignUp>(
+      () => UserSignUp(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<UserLogIn>(
-    () => UserLogIn(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<UserLogIn>(
+      () => UserLogIn(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<UserLogOut>(
-    () => UserLogOut(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<UserLogOut>(
+      () => UserLogOut(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<UserGetCurrentUser>(
-    () => UserGetCurrentUser(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<UserGetCurrentUser>(
+      () => UserGetCurrentUser(serviceLocator()),
+    );
 
   // ==========================================================================
   // SETTINGS BLOC
   // ==========================================================================
 
-  serviceLocator.registerFactory<SettingsBloc>(
-    () => SettingsBloc(
-      getTradingSettings: serviceLocator(),
-      saveTradingSettings: serviceLocator(),
-    ),
-  );
+    serviceLocator.registerFactory<SettingsBloc>(
+      () => SettingsBloc(
+        getTradingSettings: serviceLocator(),
+        saveTradingSettings: serviceLocator(),
+      ),
+    );
 
   // --------------------------------------------------------------------------
   // Auth BLoC
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerFactory<AuthBloc>(
-    () => AuthBloc(
-      userSignUp: serviceLocator(),
-      userLogIn: serviceLocator(),
-      userLogOut: serviceLocator(),
-      userGetCurrentUser: serviceLocator(),
-    ),
-  );
+    serviceLocator.registerFactory<AuthBloc>(
+      () => AuthBloc(
+        userSignUp: serviceLocator(),
+        userLogIn: serviceLocator(),
+        userLogOut: serviceLocator(),
+        userGetCurrentUser: serviceLocator(),
+      ),
+    );
 
   // ==========================================================================
   // JOURNAL FEATURE
@@ -331,50 +358,50 @@ Future<void> initDependencies() async {
   // Journal Remote Data Source
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<JournalRemoteDataSource>(
-    () => JournalRemoteDataSourceImpl(serviceLocator(), serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<JournalRemoteDataSource>(
+      () => JournalRemoteDataSourceImpl(serviceLocator(), serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Journal Repository
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<JournalRepository>(
-    () => JournalRepositoryImpl(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<JournalRepository>(
+      () => JournalRepositoryImpl(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Journal Use Cases
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<GetTrades>(
-    () => GetTrades(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<GetTrades>(
+      () => GetTrades(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<AddTrade>(
-    () => AddTrade(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<AddTrade>(
+      () => AddTrade(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<UpdateTrade>(
-    () => UpdateTrade(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<UpdateTrade>(
+      () => UpdateTrade(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<DeleteTrade>(
-    () => DeleteTrade(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<DeleteTrade>(
+      () => DeleteTrade(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Journal BLoC
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerFactory<JournalBloc>(
-    () => JournalBloc(
-      getTrades: serviceLocator(),
-      addTrade: serviceLocator(),
-      updateTrade: serviceLocator(),
-      deleteTrade: serviceLocator(),
-    ),
-  );
+    serviceLocator.registerFactory<JournalBloc>(
+      () => JournalBloc(
+        getTrades: serviceLocator(),
+        addTrade: serviceLocator(),
+        updateTrade: serviceLocator(),
+        deleteTrade: serviceLocator(),
+      ),
+    );
 
   // ==========================================================================
   // DASHBOARD FEATURE
@@ -384,33 +411,33 @@ Future<void> initDependencies() async {
   // Dashboard Remote Data Source
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<DashboardRemoteDataSource>(
-    () => DashboardRemoteDataSourceImpl(serviceLocator(), serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<DashboardRemoteDataSource>(
+      () => DashboardRemoteDataSourceImpl(serviceLocator(), serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Dashboard Repository
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<DashboardRepository>(
-    () => DashboardRepositoryImpl(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<DashboardRepository>(
+      () => DashboardRepositoryImpl(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Dashboard Use Case
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<GetDashboard>(
-    () => GetDashboard(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<GetDashboard>(
+      () => GetDashboard(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Dashboard BLoC
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerFactory<DashboardBloc>(
-    () => DashboardBloc(getDashboard: serviceLocator()),
-  );
+    serviceLocator.registerFactory<DashboardBloc>(
+      () => DashboardBloc(getDashboard: serviceLocator()),
+    );
 
   // ==========================================================================
   // RISK SETTINGS FEATURE
@@ -420,81 +447,81 @@ Future<void> initDependencies() async {
   // Risk Settings Remote Data Source
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<RiskSettingsRemoteDataSource>(
-    () => RiskSettingsRemoteDataSourceImpl(serviceLocator(), serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<RiskSettingsRemoteDataSource>(
+      () => RiskSettingsRemoteDataSourceImpl(serviceLocator(), serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Risk Settings Repository
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<RiskSettingsRepository>(
-    () => RiskSettingsRepositoryImpl(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<RiskSettingsRepository>(
+      () => RiskSettingsRepositoryImpl(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Risk Settings Use Cases
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<GetRiskSettings>(
-    () => GetRiskSettings(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<GetRiskSettings>(
+      () => GetRiskSettings(serviceLocator()),
+    );
 
-  serviceLocator.registerLazySingleton<UpdateRiskSettings>(
-    () => UpdateRiskSettings(serviceLocator()),
-  );
+    serviceLocator.registerLazySingleton<UpdateRiskSettings>(
+      () => UpdateRiskSettings(serviceLocator()),
+    );
 
   // --------------------------------------------------------------------------
   // Risk Settings BLoC
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerFactory<RiskSettingsBloc>(
-    () => RiskSettingsBloc(
-      getRiskSettings: serviceLocator(),
-      updateRiskSettings: serviceLocator(),
-    ),
-  );
+    serviceLocator.registerFactory<RiskSettingsBloc>(
+      () => RiskSettingsBloc(
+        getRiskSettings: serviceLocator(),
+        updateRiskSettings: serviceLocator(),
+      ),
+    );
 
  
   // --------------------------------------------------------------------------
   // Notification Remote Data Source
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<NotificationRemoteDataSource>(
-    () => NotificationRemoteDataSourceImpl(
-      serviceLocator<http.Client>(),
-      serviceLocator<LocalStorage>(),
-    ),
-  );
+    serviceLocator.registerLazySingleton<NotificationRemoteDataSource>(
+      () => NotificationRemoteDataSourceImpl(
+        serviceLocator<http.Client>(),
+        serviceLocator<LocalStorage>(),
+      ),
+    );
 
   // --------------------------------------------------------------------------
   // Notification Repository
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<NotificationRepository>(
-    () => NotificationRepositoryImpl(
-      serviceLocator<NotificationRemoteDataSource>(),
-    ),
-  );
+    serviceLocator.registerLazySingleton<NotificationRepository>(
+      () => NotificationRepositoryImpl(
+        serviceLocator<NotificationRemoteDataSource>(),
+      ),
+    );
 
   // --------------------------------------------------------------------------
   // Notification Use Cases
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<RegisterDeviceToken>(
-    () => RegisterDeviceToken(
-      serviceLocator<NotificationRepository>(),
-    ),
-  );
+    serviceLocator.registerLazySingleton<RegisterDeviceToken>(
+      () => RegisterDeviceToken(
+        serviceLocator<NotificationRepository>(),
+      ),
+    );
 
   // --------------------------------------------------------------------------
   // Push Notification Service
   // --------------------------------------------------------------------------
 
-  serviceLocator.registerLazySingleton<PushNotificationService>(
-    () => PushNotificationService(),
-  );
-// ==========================================================================
+    serviceLocator.registerLazySingleton<PushNotificationService>(
+      () => PushNotificationService(),
+    );
+ // ==========================================================================
 // GUARDIAN FEATURE
 // ==========================================================================
 
@@ -502,58 +529,58 @@ Future<void> initDependencies() async {
 // Guardian Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<GuardianRemoteDataSource>(
-  () => GuardianRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GuardianRemoteDataSource>(
+    () => GuardianRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Guardian Repository
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<GuardianRepository>(
-  () => GuardianRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GuardianRepository>(
+    () => GuardianRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Guardian Use Cases
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<GetGuardianAccount>(
-  () => GetGuardianAccount(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetGuardianAccount>(
+    () => GetGuardianAccount(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<
-    GenerateGuardianConnectionCode>(
-  () => GenerateGuardianConnectionCode(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      GenerateGuardianConnectionCode>(
+    () => GenerateGuardianConnectionCode(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<DisconnectGuardian>(
-  () => DisconnectGuardian(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<DisconnectGuardian>(
+    () => DisconnectGuardian(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Guardian BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<GuardianBloc>(
-  () => GuardianBloc(
-    getGuardianAccount: serviceLocator(),
-    generateGuardianConnectionCode:
-        serviceLocator(),
-    disconnectGuardian: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory<GuardianBloc>(
+    () => GuardianBloc(
+      getGuardianAccount: serviceLocator(),
+      generateGuardianConnectionCode:
+          serviceLocator(),
+      disconnectGuardian: serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // EDUCATION FEATURE
@@ -563,65 +590,65 @@ serviceLocator.registerFactory<GuardianBloc>(
 // Education Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<EducationRemoteDataSource>(
-  () => EducationRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<EducationRemoteDataSource>(
+    () => EducationRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Education Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<EducationRepository>(
-  () => EducationRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<EducationRepository>(
+    () => EducationRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
 
-serviceLocator.registerLazySingleton<GetCourses>(
-  () => GetCourses(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetCourses>(
+    () => GetCourses(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<GetCourseDetails>(
-  () => GetCourseDetails(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetCourseDetails>(
+    () => GetCourseDetails(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<GetLessons>(
-  () => GetLessons(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetLessons>(
+    () => GetLessons(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<GetProgress>(
-  () => GetProgress(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetProgress>(
+    () => GetProgress(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<UpdateProgress>(
-  () => UpdateProgress(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<UpdateProgress>(
+    () => UpdateProgress(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Education BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory(
-  () => EducationBloc(
-    getCourses: serviceLocator(),
-    getCourseDetails: serviceLocator(),
-    getLessons: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory(
+    () => EducationBloc(
+      getCourses: serviceLocator(),
+      getCourseDetails: serviceLocator(),
+      getLessons: serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // NEWS FEATURE
@@ -631,46 +658,46 @@ serviceLocator.registerFactory(
 // News Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<NewsRemoteDataSource>(
-  () => NewsRemoteDataSourceImpl(),
-);
+  serviceLocator.registerLazySingleton<NewsRemoteDataSource>(
+    () => NewsRemoteDataSourceImpl(),
+  );
 
 // --------------------------------------------------------------------------
 // News Repository
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<NewsRepository>(
-  () => NewsRepositoryImpl(
-    remoteDataSource: serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<NewsRepository>(
+    () => NewsRepositoryImpl(
+      remoteDataSource: serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // News Use Cases
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<GetNews>(
-  () => GetNews(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetNews>(
+    () => GetNews(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<GetNewsDetails>(
-  () => GetNewsDetails(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetNewsDetails>(
+    () => GetNewsDetails(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // News BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<NewsBloc>(
-  () => NewsBloc(
-    getNews: serviceLocator(),
-    getNewsDetails: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory<NewsBloc>(
+    () => NewsBloc(
+      getNews: serviceLocator(),
+      getNewsDetails: serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // SIGNALS FEATURE
@@ -680,49 +707,49 @@ serviceLocator.registerFactory<NewsBloc>(
 // Signals Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<
-    TradingSignalRemoteDataSource>(
-  () => TradingSignalRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      TradingSignalRemoteDataSource>(
+    () => TradingSignalRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Signals Repository
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<
-    TradingSignalRepository>(
-  () => TradingSignalRepositoryImpl(
-    remoteDataSource: serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      TradingSignalRepository>(
+    () => TradingSignalRepositoryImpl(
+      remoteDataSource: serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Signals Use Cases
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<
-    GetTradingSignals>(
-  () => GetTradingSignals(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      GetTradingSignals>(
+    () => GetTradingSignals(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<
-    GetTradingSignalDetails>(
-  () => GetTradingSignalDetails(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      GetTradingSignalDetails>(
+    () => GetTradingSignalDetails(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<
-    GetAiSignalConfirmation>(
-  () => GetAiSignalConfirmation(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      GetAiSignalConfirmation>(
+    () => GetAiSignalConfirmation(
+      serviceLocator(),
+    ),
+  );
 
 
 
@@ -730,13 +757,13 @@ serviceLocator.registerLazySingleton<
 // Signals BLoC
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<TradingSignalBloc>(
-  () => TradingSignalBloc(
-    getTradingSignals: serviceLocator(),
-    getTradingSignalDetails: serviceLocator(),
-    getAiConfirmation: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory<TradingSignalBloc>(
+    () => TradingSignalBloc(
+      getTradingSignals: serviceLocator(),
+      getTradingSignalDetails: serviceLocator(),
+      getAiConfirmation: serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // SUBSCRIPTION FEATURE
@@ -746,50 +773,50 @@ serviceLocator.registerFactory<TradingSignalBloc>(
 // Subscription Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<SubscriptionRemoteDataSource>(
-  () => SubscriptionRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<SubscriptionRemoteDataSource>(
+    () => SubscriptionRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Subscription Repository
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<SubscriptionRepository>(
-  () => SubscriptionRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<SubscriptionRepository>(
+    () => SubscriptionRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Subscription Use Cases
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<GetPlans>(
-  () => GetPlans(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetPlans>(
+    () => GetPlans(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<GetCurrentSubscription>(
-  () => GetCurrentSubscription(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetCurrentSubscription>(
+    () => GetCurrentSubscription(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<InitializePayment>(
-  () => InitializePayment(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<InitializePayment>(
+    () => InitializePayment(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<VerifyPayment>(
-  () => VerifyPayment(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<VerifyPayment>(
+    () => VerifyPayment(
+      serviceLocator(),
+    ),
+  );
 
 
 // --------------------------------------------------------------------------
@@ -801,11 +828,13 @@ serviceLocator.registerLazySingleton<VerifyPayment>(
     getPlans: serviceLocator(),
     getCurrentSubscription: serviceLocator(),
     initializePayment: serviceLocator(),
+    initializeCryptoPayment: serviceLocator(),
+    submitCryptoTransaction: serviceLocator(),
     verifyPayment: serviceLocator(),
-    ),
-  );
+  ),
+);
 
-  // ==========================================================================
+// ==========================================================================
 // PAYMENTS FEATURE
 // ==========================================================================
 
@@ -813,167 +842,276 @@ serviceLocator.registerLazySingleton<VerifyPayment>(
 // Payment Remote Data Source
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<PaymentRemoteDataSource>(
-  () => PaymentRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<PaymentRemoteDataSource>(
+    () => PaymentRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Payment Repository
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<PaymentRepository>(
-  () => PaymentRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<PaymentRepository>(
+    () => PaymentRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Payment Use Cases
 // --------------------------------------------------------------------------
 
-serviceLocator.registerLazySingleton<GetPayments>(
-  () => GetPayments(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetPayments>(
+    () => GetPayments(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<GetPayment>(
-  () => GetPayment(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetPayment>(
+    () => GetPayment(
+      serviceLocator(),
+    ),
+  );
 
 // --------------------------------------------------------------------------
 // Payment Bloc
 // --------------------------------------------------------------------------
 
-serviceLocator.registerFactory<PaymentBloc>(
-  () => PaymentBloc(
-    getPayments: serviceLocator(),
-    getPayment: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory<PaymentBloc>(
+    () => PaymentBloc(
+      getPayments: serviceLocator(),
+      getPayment: serviceLocator(),
+    ),
+  );
 
 // ============================================================
 // MARKET ALERTS
 // ============================================================
 
-serviceLocator.registerLazySingleton<
-    MarketAlertRemoteDataSource>(
-  () => MarketAlertRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      MarketAlertRemoteDataSource>(
+    () => MarketAlertRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<
-    MarketAlertRepository>(
-  () => MarketAlertRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      MarketAlertRepository>(
+    () => MarketAlertRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton(
-  () => GetMarketAlerts(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton(
+    () => GetMarketAlerts(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerFactory(
-  () => MarketAlertBloc(
-    getMarketAlerts: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory(
+    () => MarketAlertBloc(
+      getMarketAlerts: serviceLocator(),
+    ),
+  );
 
 // ==================================================
 // AUTO TRADING
 // ==================================================
 
-serviceLocator.registerLazySingleton<
-    AutoTradingRemoteDataSource>(
-  () => AutoTradingRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<
+      AutoTradingRemoteDataSource>(
+    () => AutoTradingRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<AutoTradingRepository>(
-  () => AutoTradingRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<AutoTradingRepository>(
+    () => AutoTradingRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton(
-  () => GetAutoTradingStatus(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton(
+    () => GetAutoTradingStatus(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton(
-  () => UpdateAutoTrading(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton(
+    () => UpdateAutoTrading(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton(
-  () => UpdateAutoTradingPreferences(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton(
+    () => UpdateAutoTradingPreferences(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerFactory(
-  () => AutoTradingBloc(
-    getAutoTradingStatus: serviceLocator(),
-    updateAutoTrading: serviceLocator(),
-    updateAutoTradingPreferences: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory(
+    () => AutoTradingBloc(
+      getAutoTradingStatus: serviceLocator(),
+      updateAutoTrading: serviceLocator(),
+      updateAutoTradingPreferences: serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // PROFILE
 // ==========================================================================
 
-serviceLocator.registerLazySingleton<ProfileRemoteDataSource>(
-  () => ProfileRemoteDataSourceImpl(
-    serviceLocator(),
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<ProfileRemoteDataSource>(
+    () => ProfileRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<ProfileRepository>(
-  () => ProfileRepositoryImpl(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<ProfileRepository>(
+    () => ProfileRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // PROFILE USE CASES
 // ==========================================================================
 
-serviceLocator.registerLazySingleton<GetProfile>(
-  () => GetProfile(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<GetProfile>(
+    () => GetProfile(
+      serviceLocator(),
+    ),
+  );
 
-serviceLocator.registerLazySingleton<UpdateProfile>(
-  () => UpdateProfile(
-    serviceLocator(),
-  ),
-);
+  serviceLocator.registerLazySingleton<UpdateProfile>(
+    () => UpdateProfile(
+      serviceLocator(),
+    ),
+  );
 
 // ==========================================================================
 // PROFILE BLOC
 // ==========================================================================
 
-serviceLocator.registerFactory<ProfileBloc>(
-  () => ProfileBloc(
-    getProfile: serviceLocator(),
-    updateProfile: serviceLocator(),
-  ),
-);
+  serviceLocator.registerFactory<ProfileBloc>(
+    () => ProfileBloc(
+      getProfile: serviceLocator(),
+      updateProfile: serviceLocator(),
+    ),
+  );
+
+// ==========================================================================
+// REFERRAL
+// ==========================================================================
+
+  serviceLocator.registerLazySingleton<ReferralRemoteDataSource>(
+    () => ReferralRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerLazySingleton<ReferralRepository>(
+    () => ReferralRepositoryImpl(
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerLazySingleton<GetReferralSummary>(
+    () => GetReferralSummary(
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerLazySingleton<GetReferrals>(
+    () => GetReferrals(
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerFactory<ReferralBloc>(
+    () => ReferralBloc(
+      getReferralSummary: serviceLocator(),
+      getReferrals: serviceLocator(),
+    ),
+  );
+
+// ==========================================================================
+// FEEDBACK FEATURE
+// ==========================================================================
+
+// --------------------------------------------------------------------------
+// Feedback Remote Data Source
+// --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<FeedbackRemoteDataSource>(
+    () => FeedbackRemoteDataSourceImpl(
+      serviceLocator(),
+      serviceLocator(),
+    ),
+  );
+
+// --------------------------------------------------------------------------
+// Feedback Repository
+// --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<FeedbackRepository>(
+    () => FeedbackRepositoryImpl(
+      remoteDataSource: serviceLocator(),
+    ),
+  );
+
+  // --------------------------------------------------------------------------
+  // Feedback Use Cases
+  // --------------------------------------------------------------------------
+
+  serviceLocator.registerLazySingleton<GetFeedback>(
+    () => GetFeedback(
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerLazySingleton<SubmitFeedback>(
+    () => SubmitFeedback(
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerLazySingleton<GetFeedbackById>(
+    () => GetFeedbackById(
+      serviceLocator(),
+    ),
+  );
+
+  // --------------------------------------------------------------------------
+  // Feedback BLoC
+  // --------------------------------------------------------------------------
+
+  serviceLocator.registerFactory<FeedbackBloc>(
+    () => FeedbackBloc(
+      getFeedback: serviceLocator(),
+      submitFeedback: serviceLocator(),
+      getFeedbackById: serviceLocator(),
+    ),
+  );
+
+    serviceLocator.registerLazySingleton<
+      InitializeCryptoPayment>(
+    () => InitializeCryptoPayment(
+      serviceLocator(),
+    ),
+  );
+
+  serviceLocator.registerLazySingleton<
+      SubmitCryptoTransaction>(
+    () => SubmitCryptoTransaction(
+      serviceLocator(),
+    ),
+  );
 
 }

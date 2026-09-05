@@ -8,11 +8,13 @@ class AuthSignUp extends AuthEvent {
   final String name;
   final String email;
   final String password;
+  final String? referralCode;
 
   const AuthSignUp({
     required this.name,
     required this.email,
     required this.password,
+    this.referralCode,
   });
 }
 
@@ -29,6 +31,7 @@ class AuthLogIn extends AuthEvent {
 class AuthLogOut extends AuthEvent {
   const AuthLogOut();
 }
+
 class AuthCheckStatus extends AuthEvent {
   const AuthCheckStatus();
 }

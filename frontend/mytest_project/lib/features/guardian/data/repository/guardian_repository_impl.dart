@@ -17,10 +17,14 @@ class GuardianRepositoryImpl
 
   @override
   Future<Either<Failure, GuardianAccount>>
-      getGuardianAccount() async {
+      getGuardianAccount(
+    String platform,
+  ) async {
     try {
       final account =
-          await remoteDataSource.getGuardianAccount();
+          await remoteDataSource.getGuardianAccount(
+        platform,
+      );
 
       return Right(account);
     } on ServerException catch (e) {
@@ -59,9 +63,13 @@ class GuardianRepositoryImpl
 
   @override
   Future<Either<Failure, void>>
-      disconnectGuardian() async {
+      disconnectGuardian(
+    String platform,
+  ) async {
     try {
-      await remoteDataSource.disconnectGuardian();
+      await remoteDataSource.disconnectGuardian(
+        platform,
+      );
 
       return const Right(null);
     } on ServerException catch (e) {

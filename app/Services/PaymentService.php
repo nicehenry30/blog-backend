@@ -10,37 +10,18 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
+
 class PaymentService
 {
-    protected PaystackService $paystackService;
-
-    protected SubscriptionService $subscriptionService;
-
-    protected ExchangeRateService $exchangeRateService;
-
     public function __construct(
-        PaystackService $paystackService,
-        SubscriptionService $subscriptionService,
-        ExchangeRateService $exchangeRateService
+        protected PaystackService $paystackService,
+        protected ReferralService $referralService,
+        protected ExchangeRateService $exchangeRateService,
     ) {
-        $this->paystackService = $paystackService;
-        $this->subscriptionService = $subscriptionService;
-        $this->exchangeRateService = $exchangeRateService;
     }
 
     /**
      * Initialize a Paystack payment for a subscription plan.
-     *
-     * Supports:
-     *
-     * - Free user -> paid plan
-     * - No subscription -> paid plan
-     * - Active plan -> higher priced plan (upgrade)
-     *
-     * Does NOT allow:
-     *
-     * - Same plan purchase
-     * - Downgrade
      */
     public function initialize(
         User $user,
@@ -49,149 +30,122 @@ class PaymentService
         return DB::transaction(function () use ($user, $planId) {
 
             /*
-             * Find selected plan.
+             * ---------------------------------------------------------------
+             * 1. Get the selected active plan.
+             * ---------------------------------------------------------------
              */
-            $plan = Plan::find($planId);
+            $plan = Plan::query()
+                ->where('id', $planId)
+                ->where('is_active', true)
+                ->first();
 
             if (! $plan) {
                 throw new RuntimeException(
-                    'Subscription plan not found.'
+                    'The selected plan is not available.'
                 );
             }
 
             /*
-             * Only active plans can be purchased.
+             * ---------------------------------------------------------------
+             * 2. Check current active subscription.
+             * ---------------------------------------------------------------
              */
-            if (! $plan->is_active) {
-                throw new RuntimeException(
-                    'This subscription plan is not active.'
-                );
-            }
-
-            /*
-             * Plans must be priced in USD.
-             */
-            $planCurrency = strtoupper(
-                $plan->currency
-            );
-
-            if ($planCurrency !== 'USD') {
-                throw new RuntimeException(
-                    'Subscription plans must be priced in USD.'
-                );
-            }
-
-            $usdAmount = (float) $plan->price;
-
-            /*
-             * Find the user's current active subscription.
-             */
-            $activeSubscription = $user
-                ->subscriptions()
-                ->with('plan')
+            $currentSubscription = Subscription::query()
+                ->where('user_id', $user->id)
                 ->where('status', 'active')
-                ->latest()
+                ->with('plan')
+                ->latest('id')
                 ->first();
 
-            /*
-             * If the user already has this exact plan,
-             * do not create another subscription.
-             */
-            if ($activeSubscription) {
+            $isUpgrade = false;
 
-                $currentPlan = $activeSubscription->plan;
-
-                if (
-                    $currentPlan &&
-                    (int) $currentPlan->id === (int) $plan->id
-                ) {
-                    throw new RuntimeException(
-                        'You are already subscribed to this plan.'
-                    );
-                }
+            if ($currentSubscription) {
+                $currentPrice = (float) $currentSubscription->plan->price;
+                $newPrice = (float) $plan->price;
 
                 /*
-                 * Prevent downgrades.
-                 *
-                 * We compare the USD prices of the plans.
+                 * Only higher-priced plans are allowed.
                  */
-                if (
-                    $currentPlan &&
-                    (float) $plan->price <=
-                        (float) $currentPlan->price
-                ) {
+                if ($newPrice <= $currentPrice) {
                     throw new RuntimeException(
                         'You can only upgrade to a higher-priced plan.'
                     );
                 }
+
+                $isUpgrade = true;
             }
 
             /*
-             * Paystack merchant currency.
+             * ---------------------------------------------------------------
+             * 3. Create pending subscription.
+             * ---------------------------------------------------------------
              */
-            $gatewayCurrency = strtoupper(
-                config(
-                    'services.paystack.merchant_currency',
-                    'NGN'
-                )
-            );
-
-            /*
-             * Convert the USD plan price using
-             * the current exchange rate.
-             */
-            $gatewayAmount =
-                $this->exchangeRateService
-                    ->convertFromUsd(
-                        $usdAmount,
-                        $gatewayCurrency
-                    );
-
-            /*
-             * Create the NEW pending subscription.
-             *
-             * IMPORTANT:
-             *
-             * If this is an upgrade, the existing
-             * subscription remains ACTIVE until payment
-             * has been successfully verified.
-             */
-            $subscription = $user->subscriptions()->create([
+            $subscription = Subscription::create([
+                'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'status' => 'pending',
-
                 'starts_at' => null,
                 'expires_at' => null,
                 'next_billing_at' => null,
-                'cancelled_at' => null,
-
                 'auto_renew' => true,
-
                 'is_trial' => false,
-                'trial_started_at' => null,
-                'trial_ends_at' => null,
-
                 'payment_provider' => 'paystack',
-                'payment_method_id' => null,
-                'payment_method_verified' => false,
             ]);
 
             /*
-             * Generate unique Tradewisser payment reference.
+             * ---------------------------------------------------------------
+             * 4. Generate payment reference.
+             * ---------------------------------------------------------------
              */
-            $reference =
-                'TW-' . strtoupper(
-                    Str::random(20)
-                );
+            $reference = $this->generateReference();
 
             /*
-             * Create pending payment.
+             * ---------------------------------------------------------------
+             * 5. Application amount/currency.
+             * ---------------------------------------------------------------
+             */
+            $applicationAmount = round(
+                (float) $plan->price,
+                2
+            );
+
+            $applicationCurrency = strtoupper(
+                $plan->currency ?: 'USD'
+            );
+
+            /*
+             * ---------------------------------------------------------------
+             * 6. Resolve Paystack gateway currency.
+             * ---------------------------------------------------------------
+             *
+             * Tradewisser plans are priced in USD.
+             * Paystack merchant currency is configured in .env.
+             */
+            $gatewayCurrency = $this->resolveGatewayCurrency(
+                $applicationCurrency
+            );
+
+            /*
+             * ---------------------------------------------------------------
+             * 7. Convert application amount to gateway currency.
+             * ---------------------------------------------------------------
+             */
+            $gatewayAmount = $this->resolveGatewayAmount(
+                $applicationAmount,
+                $applicationCurrency,
+                $gatewayCurrency
+            );
+
+            /*
+             * ---------------------------------------------------------------
+             * 8. Create local payment record.
+             * ---------------------------------------------------------------
              */
             $payment = $this->createPayment(
                 $user,
                 $subscription,
-                $usdAmount,
-                $planCurrency,
+                $applicationAmount,
+                $applicationCurrency,
                 'paystack',
                 $reference,
                 $gatewayAmount,
@@ -199,120 +153,108 @@ class PaymentService
             );
 
             /*
-             * Paystack expects the amount in the
-             * smallest unit of the gateway currency.
+             * ---------------------------------------------------------------
+             * 9. Convert gateway amount to smallest currency unit.
+             * ---------------------------------------------------------------
              *
-             * Example:
+             * NGN:
+             * ₦29,985 -> 2,998,500 kobo
              *
-             * 26,890.81 NGN
-             *
-             * becomes:
-             *
-             * 2,689,081 kobo
+             * USD:
+             * $19.99 -> 1999 cents
              */
-            $gatewayAmountInSmallestUnit =
-                (int) round(
-                    $gatewayAmount * 100
-                );
-
-            /*
-             * Generate the registered callback URL.
-             */
-            $callbackUrl = route(
-                'payment.callback'
+            $paystackAmount = (int) round(
+                $gatewayAmount * 100
             );
 
             /*
-             * Initialize Paystack transaction.
+             * ---------------------------------------------------------------
+             * 10. Callback URL.
+             * ---------------------------------------------------------------
              */
-            $paystackResponse =
-                $this->paystackService
-                    ->initializeTransaction([
-                        'email' => $user->email,
+            $frontendUrl = rtrim(
+                config('app.frontend_url'),
+                '/'
+            );
 
-                        'amount' =>
-                            $gatewayAmountInSmallestUnit,
+            $callbackUrl = $frontendUrl
+                . '/payment/callback';
 
-                        'currency' =>
-                            $gatewayCurrency,
+            /*
+             * ---------------------------------------------------------------
+             * 11. Initialize Paystack transaction.
+             * ---------------------------------------------------------------
+             */
+            $paystackResponse = $this->paystackService
+                ->initialize([
+                    'email' => $user->email,
 
-                        'reference' =>
-                            $reference,
+                    'amount' => $paystackAmount,
 
-                        'callback_url' =>
-                            $callbackUrl,
+                    'currency' => $gatewayCurrency,
 
-                        'metadata' => [
-                            'user_id' =>
-                                $user->id,
+                    'reference' => $reference,
 
-                            'subscription_id' =>
-                                $subscription->id,
+                    'callback_url' => $callbackUrl,
 
-                            'payment_id' =>
-                                $payment->id,
+                    'metadata' => [
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscription->id,
+                        'payment_id' => $payment->id,
+                        'plan_id' => $plan->id,
+                        'is_upgrade' => $isUpgrade,
+                    ],
+                ]);
 
-                            'plan_id' =>
-                                $plan->id,
-
-                            'plan_name' =>
-                                $plan->name,
-
-                            'usd_amount' =>
-                                $usdAmount,
-
-                            'gateway_amount' =>
-                                $gatewayAmount,
-
-                            'gateway_currency' =>
-                                $gatewayCurrency,
-
-                            'is_upgrade' =>
-                                $activeSubscription !== null,
-                        ],
-                    ]);
-
+            /*
+             * ---------------------------------------------------------------
+             * 12. Make sure Paystack initialization succeeded.
+             * ---------------------------------------------------------------
+             */
             if (
                 ! isset($paystackResponse['status']) ||
                 $paystackResponse['status'] !== true
             ) {
+                $payment->delete();
+                $subscription->delete();
+
                 throw new RuntimeException(
                     $paystackResponse['message']
-                    ??
-                    'Unable to initialize Paystack payment.'
+                    ?? 'Unable to initialize payment.'
                 );
             }
 
+            /*
+             * ---------------------------------------------------------------
+             * 13. Return data required by Flutter.
+             * ---------------------------------------------------------------
+             */
             return [
-                'payment' =>
-                    $payment->fresh(),
+                'payment' => $payment->fresh(),
 
-                'subscription' =>
-                    $subscription->fresh(),
+                'subscription' => $subscription
+                    ->fresh()
+                    ->load('plan'),
 
                 'authorization_url' =>
-                    $paystackResponse['data']
-                        ['authorization_url']
+                    $paystackResponse['data']['authorization_url']
                     ?? null,
 
                 'access_code' =>
-                    $paystackResponse['data']
-                        ['access_code']
+                    $paystackResponse['data']['access_code']
                     ?? null,
 
                 'reference' =>
-                    $paystackResponse['data']
-                        ['reference']
+                    $paystackResponse['data']['reference']
                     ?? $reference,
 
-                'is_upgrade' =>
-                    $activeSubscription !== null,
+                'is_upgrade' => $isUpgrade,
             ];
         });
     }
 
     /**
-     * Create a pending payment.
+     * Create a local payment record.
      */
     public function createPayment(
         User $user,
@@ -321,220 +263,87 @@ class PaymentService
         string $currency,
         string $gateway,
         string $reference,
-        float $gatewayAmount,
-        string $gatewayCurrency,
+        ?float $gatewayAmount = null,
+        ?string $gatewayCurrency = null
     ): Payment {
         return Payment::create([
-            'user_id' =>
-                $user->id,
+            'subscription_id' => $subscription->id,
+            'user_id' => $user->id,
 
-            'subscription_id' =>
-                $subscription->id,
+            'amount' => $amount,
+            'currency' => strtoupper($currency),
 
-            /*
-             * Original application price.
-             */
-            'amount' =>
-                $amount,
+            'gateway_amount' => $gatewayAmount,
 
-            'currency' =>
-                $currency,
+            'gateway_currency' => $gatewayCurrency
+                ? strtoupper($gatewayCurrency)
+                : null,
 
-            /*
-             * Actual amount sent to Paystack.
-             */
-            'gateway_amount' =>
-                $gatewayAmount,
+            'gateway' => $gateway,
+            'reference' => $reference,
 
-            'gateway_currency' =>
-                $gatewayCurrency,
+            'transaction_id' => null,
+            'status' => 'pending',
 
-            'gateway' =>
-                $gateway,
-
-            'reference' =>
-                $reference,
-
-            'status' =>
-                'pending',
+            'gateway_response' => null,
+            'paid_at' => null,
         ]);
     }
 
     /**
-     * Complete a successfully verified payment.
-     *
-     * This is the central method responsible for:
-     *
-     * 1. Activating the NEW subscription.
-     * 2. Replacing the OLD active subscription if this
-     *    payment is an upgrade.
-     * 3. Marking the payment successful.
-     */
-    public function completePayment(
-        Payment $payment,
-        string $transactionId,
-        array $gatewayResponse = []
-    ): Payment {
-        return DB::transaction(function () use (
-            $payment,
-            $transactionId,
-            $gatewayResponse
-        ) {
-
-            /*
-             * Lock the payment so duplicate callbacks
-             * cannot process it simultaneously.
-             */
-            $payment = Payment::query()
-                ->lockForUpdate()
-                ->findOrFail($payment->id);
-
-            /*
-             * Idempotency.
-             */
-            if ($payment->status === 'successful') {
-                return $payment->fresh();
-            }
-
-            if ($payment->status !== 'pending') {
-                throw new RuntimeException(
-                    'Only pending payments can be completed.'
-                );
-            }
-
-            /*
-             * Get the EXACT subscription attached
-             * to this payment.
-             */
-            $subscription =
-                $payment->subscription;
-
-            if (! $subscription) {
-                throw new RuntimeException(
-                    'Payment subscription not found.'
-                );
-            }
-
-            /*
-             * Find any currently active subscription
-             * belonging to this user.
-             *
-             * This is the OLD subscription when this
-             * payment represents an upgrade.
-             */
-            $oldSubscription =
-                Subscription::query()
-                    ->where(
-                        'user_id',
-                        $payment->user_id
-                    )
-                    ->where(
-                        'status',
-                        'active'
-                    )
-                    ->where(
-                        'id',
-                        '!=',
-                        $subscription->id
-                    )
-                    ->lockForUpdate()
-                    ->latest()
-                    ->first();
-
-            /*
-             * Activate the NEW subscription first.
-             */
-            $subscription =
-                $this->subscriptionService
-                    ->activatePendingSubscription(
-                        $subscription
-                    );
-
-            /*
-             * If there was an old active subscription,
-             * replace it now that payment has succeeded.
-             */
-            if ($oldSubscription) {
-
-                $oldSubscription->update([
-                    'status' => 'cancelled',
-                    'cancelled_at' => now(),
-                ]);
-            }
-
-            /*
-             * Mark payment successful.
-             */
-            $payment->update([
-                'status' =>
-                    'successful',
-
-                'transaction_id' =>
-                    $transactionId,
-
-                'gateway_response' =>
-                    $gatewayResponse,
-
-                'paid_at' =>
-                    now(),
-            ]);
-
-            return $payment->fresh();
-        });
-    }
-
-    /**
-     * Mark a payment as successful.
+     * Mark a payment successful.
      */
     public function markSuccessful(
         Payment $payment,
         string $transactionId,
+        array $gatewayResponse = []
     ): Payment {
-        if ($payment->status === 'successful') {
-            return $payment;
+        if ($payment->status === 'failed') {
+            throw new RuntimeException(
+                'A failed payment cannot be marked successful.'
+            );
         }
 
-        if ($payment->status !== 'pending') {
+        if ($payment->status === 'refunded') {
             throw new RuntimeException(
-                'Only pending payments can be marked successful.'
+                'A refunded payment cannot be marked successful.'
             );
         }
 
         $payment->update([
-            'status' =>
-                'successful',
+            'status' => 'successful',
+            'transaction_id' => $transactionId,
 
-            'transaction_id' =>
-                $transactionId,
+            'gateway_response' => ! empty($gatewayResponse)
+                ? $gatewayResponse
+                : $payment->gateway_response,
 
-            'paid_at' =>
-                now(),
+            'paid_at' => now(),
         ]);
 
         return $payment->fresh();
     }
 
     /**
-     * Mark a payment as failed.
+     * Mark a payment failed.
      */
     public function markFailed(
         Payment $payment
     ): Payment {
         if ($payment->status === 'successful') {
             throw new RuntimeException(
-                'A successful payment cannot be marked as failed.'
+                'A successful payment cannot be marked failed.'
             );
         }
 
-        if ($payment->status !== 'pending') {
+        if ($payment->status === 'refunded') {
             throw new RuntimeException(
-                'Only pending payments can be marked as failed.'
+                'A refunded payment cannot be marked failed.'
             );
         }
 
         $payment->update([
-            'status' =>
-                'failed',
+            'status' => 'failed',
         ]);
 
         return $payment->fresh();
@@ -547,5 +356,580 @@ class PaymentService
         Payment $payment
     ): bool {
         return $payment->status === 'pending';
+    }
+
+    /**
+     * Complete a verified payment and activate its subscription.
+     *
+     * This operation is idempotent.
+     */
+    public function completePayment(
+        Payment $payment,
+        string $transactionId,
+        array $gatewayResponse = []
+    ): Payment {
+        return DB::transaction(function () use (
+            $payment,
+            $transactionId,
+            $gatewayResponse
+        ) {
+            $payment = Payment::query()
+                ->whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /*
+             * Already completed.
+             */
+            if ($payment->status === 'successful') {
+                return $payment->fresh([
+                    'subscription.plan',
+                ]);
+            }
+
+            if ($payment->status !== 'pending') {
+                throw new RuntimeException(
+                    'Only pending payments can be completed.'
+                );
+            }
+
+            /*
+             * Mark payment successful.
+             */
+            $payment->update([
+                'status' => 'successful',
+                'transaction_id' => $transactionId,
+
+                'gateway_response' => ! empty($gatewayResponse)
+                    ? $gatewayResponse
+                    : $payment->gateway_response,
+
+                'paid_at' => now(),
+            ]);
+
+            /*
+             * Lock subscription.
+             */
+            $subscription = Subscription::query()
+                ->whereKey($payment->subscription_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $subscription->load('plan');
+
+            /*
+             * Find old active subscriptions.
+             */
+            $oldSubscriptions = Subscription::query()
+                ->where('user_id', $payment->user_id)
+                ->where('status', 'active')
+                ->where('id', '!=', $subscription->id)
+                ->lockForUpdate()
+                ->get();
+
+            /*
+             * Cancel old subscription(s).
+             */
+            foreach ($oldSubscriptions as $oldSubscription) {
+                $oldSubscription->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'auto_renew' => false,
+                ]);
+            }
+
+            /*
+             * Activate new subscription.
+             */
+            $startsAt = now();
+
+            $expiresAt = match (
+                $subscription->plan->billing_cycle
+            ) {
+                'yearly', 'annual' =>
+                    $startsAt->copy()->addYear(),
+
+                'weekly' =>
+                    $startsAt->copy()->addWeek(),
+
+                'three_months' =>
+                    $startsAt->copy()->addMonths(3),
+
+                'two_year' =>
+                    $startsAt->copy()->addYears(2),
+
+                default =>
+                    $startsAt->copy()->addMonth(),
+            };
+
+           $subscription->update([
+            'status' => 'active',
+            'starts_at' => $startsAt,
+            'expires_at' => $expiresAt,
+            'next_billing_at' => $expiresAt,
+
+            /*
+            * Manual crypto payments cannot be
+            * automatically renewed.
+            */
+            'auto_renew' =>
+                $subscription->payment_provider !== 'crypto',
+            ]);
+            /*
+             * Reward referral if applicable.
+             */
+            $user = User::find($payment->user_id);
+
+            if ($user) {
+                $this->referralService
+                    ->rewardReferralForPayment(
+                        $user,
+                        $payment->fresh()
+                    );
+            }
+
+            return $payment->fresh([
+                'subscription.plan',
+            ]);
+        });
+    }
+
+    /**
+     * Generate a unique payment reference.
+     */
+    protected function generateReference(): string
+    {
+        do {
+            $reference = 'TW-' . strtoupper(
+                Str::random(20)
+            );
+        } while (
+            Payment::where(
+                'reference',
+                $reference
+            )->exists()
+        );
+
+        return $reference;
+    }
+
+    /**
+     * Resolve the gateway currency.
+     */
+    protected function resolveGatewayCurrency(
+        string $applicationCurrency
+    ): string {
+        $merchantCurrency = strtoupper(
+            config(
+                'services.paystack.merchant_currency',
+                'NGN'
+            )
+        );
+
+        if ($merchantCurrency === '') {
+            throw new RuntimeException(
+                'Paystack merchant currency is not configured.'
+            );
+        }
+
+        return $merchantCurrency;
+    }
+
+    /**
+     * Resolve gateway amount in major currency units.
+     */
+    protected function resolveGatewayAmount(
+        float $applicationAmount,
+        string $applicationCurrency,
+        string $gatewayCurrency
+    ): float {
+        $applicationCurrency =
+            strtoupper($applicationCurrency);
+
+        $gatewayCurrency =
+            strtoupper($gatewayCurrency);
+
+        /*
+         * Same currency: no conversion required.
+         */
+        if ($applicationCurrency === $gatewayCurrency) {
+            return round(
+                $applicationAmount,
+                2
+            );
+        }
+
+        /*
+         * Existing Tradewisser conversion system:
+         *
+         * USD -> NGN
+         */
+        if (
+            $applicationCurrency === 'USD' &&
+            $gatewayCurrency === 'NGN'
+        ) {
+            return $this->exchangeRateService
+                ->convertFromUsd(
+                    $applicationAmount,
+                    'NGN'
+                );
+        }
+
+        throw new RuntimeException(
+            "Currency conversion from {$applicationCurrency} "
+            . "to {$gatewayCurrency} is not configured."
+        );
+    }
+
+            /**
+     * Initialize a manual USDT crypto payment.
+     *
+     * USDT is treated as USD for payment purposes:
+     *
+     * $1.00 USD = 1.00 USDT
+     *
+     * The payment remains pending until an admin manually
+     * verifies and approves the blockchain transaction.
+     */
+    public function initializeCrypto(
+        User $user,
+        int $planId
+    ): array {
+        return DB::transaction(function () use (
+            $user,
+            $planId
+        ) {
+
+            /*
+            * ---------------------------------------------------------------
+            * 1. Get the selected active plan.
+            * ---------------------------------------------------------------
+            */
+            $plan = Plan::query()
+                ->where('id', $planId)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $plan) {
+                throw new RuntimeException(
+                    'The selected plan is not available.'
+                );
+            }
+
+            /*
+            * ---------------------------------------------------------------
+            * 2. Check current active subscription.
+            * ---------------------------------------------------------------
+            */
+            $currentSubscription = Subscription::query()
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->with('plan')
+                ->latest('id')
+                ->first();
+
+            $isUpgrade = false;
+
+            if ($currentSubscription) {
+
+                $currentPrice =
+                    (float) $currentSubscription->plan->price;
+
+                $newPrice =
+                    (float) $plan->price;
+
+                /*
+                * Only higher-priced plans are allowed.
+                */
+                if ($newPrice <= $currentPrice) {
+                    throw new RuntimeException(
+                        'You can only upgrade to a higher-priced plan.'
+                    );
+                }
+
+                $isUpgrade = true;
+            }
+
+            /*
+            * ---------------------------------------------------------------
+            * 3. Create pending subscription.
+            * ---------------------------------------------------------------
+            */
+            $subscription = Subscription::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+
+                'status' => 'pending',
+
+                'starts_at' => null,
+                'expires_at' => null,
+                'next_billing_at' => null,
+
+                'auto_renew' => false,
+
+                'is_trial' => false,
+                'trial_ends_at' => null,
+
+                'payment_provider' => 'crypto',
+
+                'payment_method_id' => 'USDT-TRC20',
+
+                'payment_method_verified' => false,
+
+                'payment_method_reference' => null,
+            ]);
+
+            /*
+            * ---------------------------------------------------------------
+            * 4. Generate unique local payment reference.
+            * ---------------------------------------------------------------
+            */
+            $reference = $this->generateReference();
+
+            /*
+            * ---------------------------------------------------------------
+            * 5. Application price.
+            *
+            * Plans are priced in USD.
+            *
+            * For manual USDT:
+            *
+            * 1 USD = 1 USDT
+            * ---------------------------------------------------------------
+            */
+            $applicationAmount = round(
+                (float) $plan->price,
+                2
+            );
+
+            /*
+            * ---------------------------------------------------------------
+            * 6. Create pending crypto payment.
+            * ---------------------------------------------------------------
+            */
+            $payment = Payment::create([
+                'subscription_id' => $subscription->id,
+                'user_id' => $user->id,
+
+                'amount' => $applicationAmount,
+                'currency' => 'USD',
+
+                'gateway_amount' => $applicationAmount,
+                'gateway_currency' => 'USDT',
+
+                'crypto_network' =>
+                    config('services.crypto.network'),
+
+                'crypto_address' =>
+                    config('services.crypto.wallet_address'),
+
+                'transaction_hash' => null,
+
+                'submitted_at' => null,
+                'reviewed_at' => null,
+                'reviewed_by' => null,
+
+                'gateway' => 'crypto',
+
+                'reference' => $reference,
+
+                'transaction_id' => null,
+
+                'status' => 'pending',
+
+                'gateway_response' => null,
+
+                'paid_at' => null,
+            ]);
+
+            /*
+            * ---------------------------------------------------------------
+            * 7. Return payment instructions to Flutter.
+            * ---------------------------------------------------------------
+            */
+            return [
+                'payment' => $payment->fresh(),
+
+                'subscription' => $subscription
+                    ->fresh()
+                    ->load('plan'),
+
+                'payment_method' => 'USDT',
+
+                'network' =>
+                    config('services.crypto.network'),
+
+                'wallet_address' =>
+                    config('services.crypto.wallet_address'),
+
+                'amount_usdt' =>
+                    $applicationAmount,
+
+                'reference' => $reference,
+
+                'is_upgrade' => $isUpgrade,
+            ];
+        });
+    }
+
+        /**
+     * Submit a transaction hash for a manual crypto payment.
+     *
+     * The payment remains pending until an admin
+     * manually verifies and approves it.
+     */
+    public function submitCryptoTransaction(
+        User $user,
+        int $paymentId,
+        string $transactionHash
+    ): Payment {
+        return DB::transaction(function () use (
+            $user,
+            $paymentId,
+            $transactionHash
+        ) {
+            $payment = Payment::query()
+                ->whereKey($paymentId)
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $payment) {
+                throw new RuntimeException(
+                    'Payment not found.'
+                );
+            }
+
+            if ($payment->gateway !== 'crypto') {
+                throw new RuntimeException(
+                    'This is not a crypto payment.'
+                );
+            }
+
+            if ($payment->status !== 'pending') {
+                throw new RuntimeException(
+                    'Only pending crypto payments can be submitted.'
+                );
+            }
+
+            if ($payment->transaction_hash) {
+                throw new RuntimeException(
+                    'A transaction hash has already been submitted for this payment.'
+                );
+            }
+
+            $transactionHash = trim($transactionHash);
+
+            if ($transactionHash === '') {
+                throw new RuntimeException(
+                    'Transaction hash cannot be empty.'
+                );
+            }
+
+            $payment->update([
+                'transaction_hash' => $transactionHash,
+                'submitted_at' => now(),
+            ]);
+
+            return $payment->fresh();
+        });
+    }   
+    
+        /**
+     * Approve a submitted manual crypto payment.
+     *
+     * The payment must have a submitted transaction hash.
+     * Approval activates the subscription through completePayment().
+     */
+    public function approveCryptoPayment(
+        Payment $payment,
+        User $admin
+    ): Payment {
+        return DB::transaction(function () use ($payment, $admin) {
+
+            $payment = Payment::query()
+                ->whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($payment->gateway !== 'crypto') {
+                throw new RuntimeException(
+                    'This is not a crypto payment.'
+                );
+            }
+
+            if ($payment->status !== 'pending') {
+                throw new RuntimeException(
+                    'Only pending crypto payments can be approved.'
+                );
+            }
+
+            if (! $payment->transaction_hash) {
+                throw new RuntimeException(
+                    'This payment does not have a submitted transaction hash.'
+                );
+            }
+
+            /*
+            * Record the admin review.
+            */
+            $payment->update([
+                'reviewed_at' => now(),
+                'reviewed_by' => $admin->id,
+            ]);
+
+            /*
+            * Complete the payment using the existing
+            * centralized payment completion workflow.
+            */
+            return $this->completePayment(
+                $payment,
+                $payment->transaction_hash,
+                [
+                    'payment_type' => 'manual_crypto',
+                    'network' => $payment->crypto_network,
+                    'reviewed_by' => $admin->id,
+                    'reviewed_at' => now()->toDateTimeString(),
+                ]
+            );
+        });
+    }
+
+    /**
+     * Reject a submitted manual crypto payment.
+     */
+    public function rejectCryptoPayment(
+        Payment $payment,
+        User $admin
+    ): Payment {
+        return DB::transaction(function () use ($payment, $admin) {
+
+            $payment = Payment::query()
+                ->whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($payment->gateway !== 'crypto') {
+                throw new RuntimeException(
+                    'This is not a crypto payment.'
+                );
+            }
+
+            if ($payment->status !== 'pending') {
+                throw new RuntimeException(
+                    'Only pending crypto payments can be rejected.'
+                );
+            }
+
+            $payment->update([
+                'status' => 'failed',
+                'reviewed_at' => now(),
+                'reviewed_by' => $admin->id,
+            ]);
+
+            return $payment->fresh([
+                'subscription.plan',
+            ]);
+        });
     }
 }

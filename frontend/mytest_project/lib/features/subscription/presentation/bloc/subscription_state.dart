@@ -19,11 +19,32 @@ class SubscriptionLoaded extends SubscriptionState {
 
 class SubscriptionPaymentReady
     extends SubscriptionState {
-  final String authorizationUrl;
+  final PaymentInitialization payment;
 
   SubscriptionPaymentReady(
-    this.authorizationUrl,
+    this.payment,
   );
+}
+
+class SubscriptionCryptoPaymentReady
+    extends SubscriptionState {
+  final CryptoPayment payment;
+
+  SubscriptionCryptoPaymentReady(
+    this.payment,
+  );
+}
+
+class SubscriptionCryptoSubmitting
+    extends SubscriptionState {}
+
+class SubscriptionCryptoPaymentSubmitted
+    extends SubscriptionState {
+  final String message;
+
+  SubscriptionCryptoPaymentSubmitted({
+    required this.message,
+  });
 }
 
 class SubscriptionFailure

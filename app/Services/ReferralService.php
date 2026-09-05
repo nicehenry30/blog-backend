@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Payment;
 use App\Models\Referral;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,14 @@ use Illuminate\Support\Str;
 
 class ReferralService
 {
+    /**
+     * Referral reward percentage.
+     *
+     * Example:
+     * $100 payment = $2 referral reward.
+     */
+    private const REWARD_PERCENTAGE = 2.0;
+
     /**
      * Generate a unique referral code for a user.
      */
@@ -57,11 +66,85 @@ class ReferralService
     }
 
     /**
-     * Qualify a referral.
+     * Reward a referral when the referred user makes
+     * their first successful paid subscription payment.
      *
-     * A referral should only become qualified when the referred
-     * user satisfies the conditions defined by the subscription
-     * system.
+     * Reward = 2% of the successful payment amount.
+     *
+     * The qualifying payment ID is stored so that the
+     * same payment can never reward the referral twice.
+     */
+    public function rewardReferralForPayment(
+        User $referredUser,
+        Payment $payment
+    ): ?Referral {
+        return DB::transaction(function () use (
+            $referredUser,
+            $payment
+        ) {
+            $referral = Referral::where(
+                'referred_user_id',
+                $referredUser->id
+            )
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$referral) {
+                return null;
+            }
+
+            /*
+             * Safety check:
+             * only successful payments can qualify a referral.
+             */
+            if ($payment->status !== 'successful') {
+                return null;
+            }
+
+            /*
+             * Safety check:
+             * a payment must belong to the referred user.
+             */
+            if ((int) $payment->user_id !== (int) $referredUser->id) {
+                return null;
+            }
+
+            /*
+             * Safety check:
+             * this referral must not already be tied
+             * to a qualifying payment.
+             */
+            if ($referral->qualifying_payment_id !== null) {
+                return null;
+            }
+
+            /*
+             * Calculate the 2% reward.
+             */
+            $rewardAmount = round(
+                (float) $payment->amount
+                    * (self::REWARD_PERCENTAGE / 100),
+                2
+            );
+
+            $referral->update([
+                'qualifying_payment_id' => $payment->id,
+                'reward_amount' => $rewardAmount,
+                'reward_currency' => $payment->currency ?? 'USD',
+                'status' => 'rewarded',
+                'qualified_at' => now(),
+                'rewarded_at' => now(),
+            ]);
+
+            return $referral->fresh();
+        });
+    }
+
+    /**
+     * Qualify a referral without rewarding it.
+     *
+     * Kept for compatibility with existing code/tests.
      */
     public function qualifyReferral(
         User $referredUser
@@ -87,6 +170,8 @@ class ReferralService
 
     /**
      * Mark a qualified referral as rewarded.
+     *
+     * Kept for compatibility with existing code.
      */
     public function rewardReferral(
         Referral $referral,

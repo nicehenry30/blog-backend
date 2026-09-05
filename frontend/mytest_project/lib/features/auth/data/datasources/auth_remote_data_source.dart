@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+
 import 'package:mytest_project/core/error/exceptions.dart';
 import 'package:mytest_project/features/auth/domain/entities/auth_user.dart';
 
@@ -9,6 +10,7 @@ abstract interface class AuthRemoteDataSource {
     required String email,
     required String password,
     required String name,
+    String? referralCode,
   });
 
   Future<AuthUser> loginWithEmailPassword({
@@ -25,18 +27,21 @@ abstract interface class AuthRemoteDataSource {
   });
 }
 
-class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+class AuthRemoteDataSourceImpl
+    implements AuthRemoteDataSource {
   final http.Client client;
 
   AuthRemoteDataSourceImpl(this.client);
 
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl =
+      'http://127.0.0.1:8000/api';
 
   @override
   Future<AuthUser> signUpWithEmailPassword({
     required String email,
     required String password,
     required String name,
+    String? referralCode,
   }) async {
     final response = await client.post(
       Uri.parse('$baseUrl/register'),
@@ -48,6 +53,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         'name': name,
         'email': email,
         'password': password,
+        if (referralCode != null &&
+            referralCode.trim().isNotEmpty)
+          'referral_code': referralCode.trim(),
       }),
     );
 
@@ -61,7 +69,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     throw ServerException(
-      message: data['message'] ?? 'Registration failed',
+      message:
+          data['message'] ??
+          'Registration failed',
     );
   }
 
@@ -92,7 +102,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     throw ServerException(
-      message: data['message'] ?? 'Login failed',
+      message:
+          data['message'] ??
+          'Login failed',
     );
   }
 
@@ -111,15 +123,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      // Laravel returns:
-      // {
-      //   "user": {
-      //     "id": 1,
-      //     "name": "Henry",
-      //     "email": "..."
-      //   }
-      // }
-
       return AuthUser.fromJson(
         data['user'],
         token: token,
@@ -127,7 +130,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     throw ServerException(
-      message: data['message'] ?? 'Unable to get current user',
+      message:
+          data['message'] ??
+          'Unable to get current user',
     );
   }
 
@@ -148,9 +153,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final data = jsonDecode(response.body);
 
       throw ServerException(
-        message: data['message'] ?? 'Logout failed',
+        message:
+            data['message'] ??
+            'Logout failed',
       );
     }
   }
 }
-

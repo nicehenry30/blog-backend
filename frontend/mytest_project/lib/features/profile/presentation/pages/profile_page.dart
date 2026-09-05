@@ -3,6 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:mytest_project/core/di/injection_container.dart';
 
+import '../../../referral/presentation/pages/referral_page.dart';
+
+import '../../../referral/presentation/bloc/referral_bloc.dart';
+import '../../../referral/presentation/bloc/referral_event.dart';
+
 import 'package:mytest_project/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:mytest_project/features/profile/presentation/pages/edit_profile_page.dart';
 
@@ -11,6 +16,10 @@ import 'package:mytest_project/features/settings/presentation/pages/settings_pag
 
 import 'package:mytest_project/features/guardian/presentation/bloc/guardian_bloc.dart';
 import 'package:mytest_project/features/guardian/presentation/pages/guardian_page.dart';
+import 'package:mytest_project/features/feedback/presentation/bloc/feedback_bloc.dart';
+import 'package:mytest_project/features/feedback/presentation/pages/feedback_page.dart';
+
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -191,7 +200,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             builder: (_) => BlocProvider(
                               create: (_) => serviceLocator<GuardianBloc>()
                                 ..add(
-                                  GuardianLoadRequested(),
+                                  GuardianLoadRequested(
+                                    platform: 'MT4',
+                                  ),
                                 ),
                               child: const GuardianPage(
                                 platform: 'MT4',
@@ -223,7 +234,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             builder: (_) => BlocProvider(
                               create: (_) => serviceLocator<GuardianBloc>()
                                 ..add(
-                                  GuardianLoadRequested(),
+                                  GuardianLoadRequested(
+                                    platform: 'MT5',
+                                  ),
                                 ),
                               child: const GuardianPage(
                                 platform: 'MT5',
@@ -276,6 +289,65 @@ class _ProfilePageState extends State<ProfilePage> {
 
                       const Divider(height: 1),
 
+                      // ======================================================
+                      // REFER & EARN
+                      // ======================================================
+
+                      ListTile(
+                        leading: const Icon(
+                          Icons.card_giftcard_outlined,
+                        ),
+                        title: const Text('Refer & Earn'),
+                        subtitle: const Text(
+                          'Invite friends and earn rewards',
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BlocProvider(
+                                create: (_) => serviceLocator<ReferralBloc>()
+                                  ..add(const ReferralLoadRequested()),
+                                child: const ReferralPage(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // ======================================================
+                      // FEEDBACK
+                      // ======================================================
+
+                      ListTile(
+                        leading: const Icon(
+                          Icons.feedback_outlined,
+                        ),
+                        title: const Text('Feedback'),
+                        subtitle: const Text(
+                          'Send feedback or contact support',
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => BlocProvider(
+                                create: (_) =>
+                                    serviceLocator<FeedbackBloc>()
+                                      ..add(
+                                        const LoadFeedback(),
+                                      ),
+                                child: const FeedbackPage(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const Divider(height: 1),
                       // ======================================================
                       // LOGOUT
                       // ======================================================

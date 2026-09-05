@@ -3,8 +3,11 @@ import 'package:fpdart/fpdart.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
 
+import '../../domain/entities/crypto_payment.dart';
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
+import '../../domain/entities/payment_initialization.dart';
+
 import '../../domain/repositories/subscription_repository.dart';
 
 import '../datasources/subscription_remote_data_source.dart';
@@ -48,7 +51,7 @@ class SubscriptionRepositoryImpl
   }
 
   @override
-  Future<Either<Failure, String>>
+  Future<Either<Failure, PaymentInitialization>>
       initializePayment(
     int planId,
   ) async {
@@ -66,6 +69,47 @@ class SubscriptionRepositoryImpl
   }
 
   @override
+  Future<Either<Failure, CryptoPayment>>
+      initializeCryptoPayment(
+    int planId,
+  ) async {
+    try {
+      final result =
+          await remoteDataSource
+              .initializeCryptoPayment(
+        planId,
+      );
+
+      return right(result);
+    } on ServerException catch (e) {
+      return left(
+        Failure(e.message),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>>
+      submitCryptoTransaction(
+    int paymentId,
+    String transactionHash,
+  ) async {
+    try {
+      await remoteDataSource
+          .submitCryptoTransaction(
+        paymentId,
+        transactionHash,
+      );
+
+      return right(null);
+    } on ServerException catch (e) {
+      return left(
+        Failure(e.message),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, Subscription>>
       verifyPayment(
     String reference,
@@ -74,6 +118,29 @@ class SubscriptionRepositoryImpl
       final result =
           await remoteDataSource
               .verifyPayment(reference);
+
+      return right(result);
+    } on ServerException catch (e) {
+      return left(
+        Failure(e.message),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, Subscription>>
+      startTrial(
+    int planId,
+    String paymentProvider,
+    String paymentMethodId,
+  ) async {
+    try {
+      final result =
+          await remoteDataSource.startTrial(
+        planId,
+        paymentProvider,
+        paymentMethodId,
+      );
 
       return right(result);
     } on ServerException catch (e) {

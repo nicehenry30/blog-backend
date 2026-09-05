@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:mytest_project/core/usecase/usecase.dart';
 
 import 'package:mytest_project/features/guardian/domain/entities/guardian_account.dart';
 import 'package:mytest_project/features/guardian/domain/usecases/disconnect_guardian.dart';
@@ -10,12 +9,10 @@ import 'package:mytest_project/features/guardian/domain/usecases/get_guardian_ac
 part 'guardian_event.dart';
 part 'guardian_state.dart';
 
-class GuardianBloc
-    extends Bloc<GuardianEvent, GuardianState> {
+class GuardianBloc extends Bloc<GuardianEvent, GuardianState> {
   final GetGuardianAccount getGuardianAccount;
 
-  final GenerateGuardianConnectionCode
-      generateGuardianConnectionCode;
+  final GenerateGuardianConnectionCode generateGuardianConnectionCode;
 
   final DisconnectGuardian disconnectGuardian;
 
@@ -24,9 +21,7 @@ class GuardianBloc
     required this.generateGuardianConnectionCode,
     required this.disconnectGuardian,
   }) : super(GuardianInitial()) {
-    on<GuardianLoadRequested>(
-      _onLoadRequested,
-    );
+    on<GuardianLoadRequested>(_onLoadRequested);
 
     on<GuardianConnectionCodeRequested>(
       _onConnectionCodeRequested,
@@ -41,12 +36,10 @@ class GuardianBloc
     GuardianLoadRequested event,
     Emitter<GuardianState> emit,
   ) async {
-    emit(
-      GuardianLoading(),
-    );
+    emit(GuardianLoading());
 
     final result = await getGuardianAccount(
-      NoParams(),
+      event.platform,
     );
 
     result.fold(
@@ -71,12 +64,9 @@ class GuardianBloc
     GuardianConnectionCodeRequested event,
     Emitter<GuardianState> emit,
   ) async {
-    emit(
-      GuardianConnectionCodeLoading(),
-    );
+    emit(GuardianConnectionCodeLoading());
 
-    final result =
-        await generateGuardianConnectionCode(
+    final result = await generateGuardianConnectionCode(
       event.platform,
     );
 
@@ -103,12 +93,10 @@ class GuardianBloc
     GuardianDisconnectRequested event,
     Emitter<GuardianState> emit,
   ) async {
-    emit(
-      GuardianDisconnecting(),
-    );
+    emit(GuardianDisconnecting());
 
     final result = await disconnectGuardian(
-      NoParams(),
+      event.platform,
     );
 
     await result.fold(
@@ -120,15 +108,12 @@ class GuardianBloc
         );
       },
       (_) async {
-        emit(
-          GuardianDisconnected(),
-        );
+        emit(GuardianDisconnected());
 
         // Reload the Guardian account so the UI
         // immediately changes to "Not Connected".
-        final reloadResult =
-            await getGuardianAccount(
-          NoParams(),
+        final reloadResult = await getGuardianAccount(
+          event.platform,
         );
 
         reloadResult.fold(

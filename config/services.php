@@ -102,4 +102,39 @@ return [
             ),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Manual Crypto Payments
+    |--------------------------------------------------------------------------
+    |
+    | Tradewisser currently accepts USDT payments manually.
+    |
+    | Network:
+    | TRC20 (TRON)
+    |
+    | The wallet address is stored in .env and must never be
+    | hard-coded into the application source code.
+    |
+    */
+
+    'crypto' => [
+
+        'currency' =>
+            env(
+                'CRYPTO_PAYMENT_CURRENCY',
+                'USDT'
+            ),
+
+        'network' =>
+            env(
+                'CRYPTO_PAYMENT_NETWORK',
+                'TRC20'
+            ),
+
+        'wallet_address' =>
+            env(
+                'CRYPTO_PAYMENT_WALLET_ADDRESS'
+            ),
+    ],
+
 ];

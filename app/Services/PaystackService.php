@@ -10,7 +10,7 @@ class PaystackService
     /**
      * Initialize a Paystack transaction.
      */
-    public function initializeTransaction(array $data): array
+    public function initialize(array $data): array
     {
         try {
 

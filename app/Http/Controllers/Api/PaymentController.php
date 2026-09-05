@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 class PaymentController extends Controller
 {
     protected PaystackService $paystackService;
+
     protected PaymentService $paymentService;
 
     public function __construct(
@@ -70,6 +71,39 @@ class PaymentController extends Controller
                 $request->user(),
                 (int) $validated['plan_id']
             );
+
+            return response()->json($payment);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Initialize a manual USDT payment.
+     *
+     * The user will receive the TRC20 wallet address,
+     * USDT amount and payment reference.
+     *
+     * The payment remains pending until an admin
+     * manually verifies and approves the transaction.
+     */
+    public function initializeCrypto(Request $request)
+    {
+        $validated = $request->validate([
+            'plan_id' => [
+                'required',
+                'exists:plans,id',
+            ],
+        ]);
+
+        try {
+            $payment = $this->paymentService
+                ->initializeCrypto(
+                    $request->user(),
+                    (int) $validated['plan_id']
+                );
 
             return response()->json($payment);
         } catch (\RuntimeException $e) {
@@ -198,4 +232,40 @@ class PaymentController extends Controller
             'message' => 'Webhook processed successfully.',
         ]);
     }
+
+        public function submitCryptoTransaction(Request $request)
+    {
+        $validated = $request->validate([
+            'payment_id' => [
+                'required',
+                'integer',
+                'exists:payments,id',
+            ],
+            'transaction_hash' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+        ]);
+
+        try {
+            $payment = $this->paymentService
+                ->submitCryptoTransaction(
+                    $request->user(),
+                    (int) $validated['payment_id'],
+                    $validated['transaction_hash']
+                );
+
+            return response()->json([
+                'message' => 'Transaction submitted successfully. Your payment is waiting for approval.',
+                'status' => 'waiting_for_approval',
+                'payment' => $payment,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:mytest_project/features/auth/domain/entities/auth_user.dart';
 import 'package:mytest_project/features/auth/domain/usecases/user_get_current_user.dart';
 import 'package:mytest_project/features/auth/domain/usecases/user_log_in.dart';
@@ -19,11 +20,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required UserLogIn userLogIn,
     required UserLogOut userLogOut,
     required UserGetCurrentUser userGetCurrentUser,
-  }) : _userSignUp = userSignUp,
-       _userLogIn = userLogIn,
-       _userLogOut = userLogOut,
-       _userGetCurrentUser = userGetCurrentUser,
-       super(const AuthInitial()) {
+  })  : _userSignUp = userSignUp,
+        _userLogIn = userLogIn,
+        _userLogOut = userLogOut,
+        _userGetCurrentUser = userGetCurrentUser,
+        super(const AuthInitial()) {
     on<AuthSignUp>(_onAuthSignUp);
     on<AuthLogIn>(_onAuthLogIn);
     on<AuthLogOut>(_onAuthLogOut);
@@ -41,6 +42,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         name: event.name,
         email: event.email,
         password: event.password,
+        referralCode: event.referralCode,
       ),
     );
 

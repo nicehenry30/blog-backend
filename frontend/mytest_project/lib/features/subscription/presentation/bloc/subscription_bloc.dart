@@ -2,10 +2,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
+import '../../domain/entities/payment_initialization.dart';
+import '../../domain/entities/crypto_payment.dart';
 
 import '../../domain/usecases/get_current_subscription.dart';
 import '../../domain/usecases/get_plans.dart';
 import '../../domain/usecases/initialize_payment.dart';
+import '../../domain/usecases/initialize_crypto_payment.dart';
+import '../../domain/usecases/submit_crypto_transaction.dart';
 import '../../domain/usecases/verify_payment.dart';
 
 part 'subscription_event.dart';
@@ -19,12 +23,18 @@ class SubscriptionBloc
 
   final InitializePayment initializePayment;
 
+  final InitializeCryptoPayment initializeCryptoPayment;
+
+  final SubmitCryptoTransaction submitCryptoTransaction;
+
   final VerifyPayment verifyPayment;
 
   SubscriptionBloc({
     required this.getPlans,
     required this.getCurrentSubscription,
     required this.initializePayment,
+    required this.initializeCryptoPayment,
+    required this.submitCryptoTransaction,
     required this.verifyPayment,
   }) : super(SubscriptionInitial()) {
     on<LoadSubscription>(
@@ -33,6 +43,14 @@ class SubscriptionBloc
 
     on<InitializeSubscriptionPayment>(
       _onInitializePayment,
+    );
+
+    on<InitializeCryptoSubscriptionPayment>(
+      _onInitializeCryptoPayment,
+    );
+
+    on<SubmitSubscriptionCryptoTransaction>(
+      _onSubmitCryptoTransaction,
     );
 
     on<VerifySubscriptionPayment>(
@@ -100,10 +118,69 @@ class SubscriptionBloc
           ),
         );
       },
-      (url) {
+      (payment) {
         emit(
           SubscriptionPaymentReady(
-            url,
+            payment,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onInitializeCryptoPayment(
+    InitializeCryptoSubscriptionPayment event,
+    Emitter<SubscriptionState> emit,
+  ) async {
+    emit(SubscriptionLoading());
+
+    final result = await initializeCryptoPayment(
+      event.planId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          SubscriptionFailure(
+            failure.message,
+          ),
+        );
+      },
+      (payment) {
+        emit(
+          SubscriptionCryptoPaymentReady(
+            payment,
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onSubmitCryptoTransaction(
+    SubmitSubscriptionCryptoTransaction event,
+    Emitter<SubscriptionState> emit,
+  ) async {
+    emit(SubscriptionCryptoSubmitting());
+
+    final result = await submitCryptoTransaction(
+      event.paymentId,
+      event.transactionHash,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          SubscriptionFailure(
+            failure.message,
+          ),
+        );
+      },
+      (_) {
+        emit(
+          SubscriptionCryptoPaymentSubmitted(
+            message:
+                'Transaction submitted successfully. '
+                'Your payment is waiting for approval.',
           ),
         );
       },
