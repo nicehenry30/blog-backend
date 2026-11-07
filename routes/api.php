@@ -22,6 +22,8 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\TrialController;
 use App\Http\Controllers\Api\ReferralController;
 use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\TradewisserAiController;
 // =====================================================================
 // PUBLIC AUTH ROUTES
 // =====================================================================
@@ -221,6 +223,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get(
     '/signals/{signal}/ai-confirmation',
     [SignalController::class, 'aiConfirmation']
+    );
+
+    Route::post(
+    '/ai/market-analysis',
+    [TradewisserAiController::class, 'marketAnalysis']
     );
 
     // ================================================================
@@ -435,3 +442,5 @@ Route::post('/payments/webhook', [
     LessonController::class,
     'show',
     ]);
+
+    Route::get('/news', [NewsController::class, 'index']);

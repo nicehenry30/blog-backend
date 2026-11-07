@@ -1,3 +1,4 @@
+import 'package:mytest_project/core/config/api_config.dart';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -24,7 +25,7 @@ class ProfileRemoteDataSourceImpl
   );
 
   static const String baseUrl =
-      'http://127.0.0.1:8000/api';
+      ApiConfig.baseUrl;
 
   Future<Map<String, String>> _headers() async {
     final token = localStorage.getToken();

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:mytest_project/core/error/exceptions.dart';
 import 'package:mytest_project/features/auth/domain/entities/auth_user.dart';
+import 'package:mytest_project/core/config/api_config.dart';
 
 abstract interface class AuthRemoteDataSource {
   Future<AuthUser> signUpWithEmailPassword({
@@ -33,8 +34,7 @@ class AuthRemoteDataSourceImpl
 
   AuthRemoteDataSourceImpl(this.client);
 
-  static const String baseUrl =
-      'http://127.0.0.1:8000/api';
+  static const String baseUrl = ApiConfig.baseUrl;
 
   @override
   Future<AuthUser> signUpWithEmailPassword({

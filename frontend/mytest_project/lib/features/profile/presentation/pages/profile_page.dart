@@ -18,7 +18,7 @@ import 'package:mytest_project/features/guardian/presentation/bloc/guardian_bloc
 import 'package:mytest_project/features/guardian/presentation/pages/guardian_page.dart';
 import 'package:mytest_project/features/feedback/presentation/bloc/feedback_bloc.dart';
 import 'package:mytest_project/features/feedback/presentation/pages/feedback_page.dart';
-
+import 'package:mytest_project/features/subscription/presentation/pages/subscription_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -31,16 +31,11 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Profile'), centerTitle: true),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state is ProfileFailure) {
@@ -50,21 +45,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 50,
-                    ),
+                    const Icon(Icons.error_outline, size: 50),
                     const SizedBox(height: 12),
-                    Text(
-                      state.message,
-                      textAlign: TextAlign.center,
-                    ),
+                    Text(state.message, textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        context
-                            .read<ProfileBloc>()
-                            .add(LoadProfile());
+                        context.read<ProfileBloc>().add(LoadProfile());
                       },
                       child: const Text('Retry'),
                     ),
@@ -79,9 +66,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
             return RefreshIndicator(
               onRefresh: () async {
-                context
-                    .read<ProfileBloc>()
-                    .add(LoadProfile());
+                context.read<ProfileBloc>().add(LoadProfile());
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -90,18 +75,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   // ==========================================================
                   // PROFILE HEADER
                   // ==========================================================
-
-                  _ProfileHeader(
-                    name: profile.name,
-                    email: profile.email,
-                  ),
+                  _ProfileHeader(name: profile.name, email: profile.email),
 
                   const SizedBox(height: 20),
 
                   // ==========================================================
                   // PROFILE INFORMATION
                   // ==========================================================
-
                   Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
@@ -109,8 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Padding(
                       padding: const EdgeInsets.all(18),
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
@@ -130,22 +109,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                 icon: const Icon(Icons.edit_outlined),
                                 onPressed: () async {
                                   await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => BlocProvider.value(
-                                      value: context.read<ProfileBloc>(),
-                                      child: EditProfilePage(
-                                        profile: profile,
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider.value(
+                                        value: context.read<ProfileBloc>(),
+                                        child: EditProfilePage(
+                                          profile: profile,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                );
+                                  );
 
                                   if (!context.mounted) return;
 
-                                  context
-                                      .read<ProfileBloc>()
-                                      .add(LoadProfile());
+                                  context.read<ProfileBloc>().add(
+                                    LoadProfile(),
+                                  );
                                 },
                               ),
                             ],
@@ -174,246 +153,213 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 20),
 
                   // ==========================================================
-                    // GUARDIAN
-                    // ==========================================================
+                  // GUARDIAN
+                  // ==========================================================
+                  const Text(
+                    'Guardian',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
 
-                    const Text(
-                      'Guardian',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  const SizedBox(height: 10),
 
-                    const SizedBox(height: 10),
-
-                    // -------------------- MT4 --------------------
-
-                    _GuardianCard(
-                      title: 'MT4 Guardian',
-                      platform: 'MT4',
-                      connected: profile.mt4Connected,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BlocProvider(
-                              create: (_) => serviceLocator<GuardianBloc>()
-                                ..add(
-                                  GuardianLoadRequested(
-                                    platform: 'MT4',
-                                  ),
-                                ),
-                              child: const GuardianPage(
-                                platform: 'MT4',
-                              ),
-                            ),
+                  // -------------------- MT4 --------------------
+                  _GuardianCard(
+                    title: 'MT4 Guardian',
+                    platform: 'MT4',
+                    connected: profile.mt4Connected,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider(
+                            create: (_) =>
+                                serviceLocator<GuardianBloc>()
+                                  ..add(GuardianLoadRequested(platform: 'MT4')),
+                            child: const GuardianPage(platform: 'MT4'),
                           ),
-                        );
+                        ),
+                      );
 
-                        if (!context.mounted) return;
+                      if (!context.mounted) return;
 
-                        context.read<ProfileBloc>().add(
-                          LoadProfile(),
-                        );
-                      },
-                    ),
+                      context.read<ProfileBloc>().add(LoadProfile());
+                    },
+                  ),
 
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                    // -------------------- MT5 --------------------
-
-                    _GuardianCard(
-                      title: 'MT5 Guardian',
-                      platform: 'MT5',
-                      connected: profile.mt5Connected,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BlocProvider(
-                              create: (_) => serviceLocator<GuardianBloc>()
-                                ..add(
-                                  GuardianLoadRequested(
-                                    platform: 'MT5',
-                                  ),
-                                ),
-                              child: const GuardianPage(
-                                platform: 'MT5',
-                              ),
-                            ),
+                  // -------------------- MT5 --------------------
+                  _GuardianCard(
+                    title: 'MT5 Guardian',
+                    platform: 'MT5',
+                    connected: profile.mt5Connected,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider(
+                            create: (_) =>
+                                serviceLocator<GuardianBloc>()
+                                  ..add(GuardianLoadRequested(platform: 'MT5')),
+                            child: const GuardianPage(platform: 'MT5'),
                           ),
-                        );
+                        ),
+                      );
 
-                        if (!context.mounted) return;
+                      if (!context.mounted) return;
 
-                        context.read<ProfileBloc>().add(
-                          LoadProfile(),
-                        );
-                      },
-                    ),
+                      context.read<ProfileBloc>().add(LoadProfile());
+                    },
+                  ),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // ==========================================================
                   // ACCOUNT
                   // ==========================================================
-
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    children: [
-                      // ======================================================
-                      // SETTINGS
-                      // ======================================================
-
-                      ListTile(
-                        leading: const Icon(
-                          Icons.settings_outlined,
-                        ),
-                        title: const Text('Settings'),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SettingsPage(),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const Divider(height: 1),
-
-                      // ======================================================
-                      // REFER & EARN
-                      // ======================================================
-
-                      ListTile(
-                        leading: const Icon(
-                          Icons.card_giftcard_outlined,
-                        ),
-                        title: const Text('Refer & Earn'),
-                        subtitle: const Text(
-                          'Invite friends and earn rewards',
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                        ),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => BlocProvider(
-                                create: (_) => serviceLocator<ReferralBloc>()
-                                  ..add(const ReferralLoadRequested()),
-                                child: const ReferralPage(),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.workspace_premium_outlined),
+                          title: const Text('Subscription / Plans'),
+                          subtitle: const Text(
+                            'Manage your plan and subscription',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionPage(),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                      // ======================================================
-                      // FEEDBACK
-                      // ======================================================
+                            );
+                          },
+                        ),
 
-                      ListTile(
-                        leading: const Icon(
-                          Icons.feedback_outlined,
-                        ),
-                        title: const Text('Feedback'),
-                        subtitle: const Text(
-                          'Send feedback or contact support',
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                        ),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => BlocProvider(
-                                create: (_) =>
-                                    serviceLocator<FeedbackBloc>()
-                                      ..add(
-                                        const LoadFeedback(),
-                                      ),
-                                child: const FeedbackPage(),
+                        // ======================================================
+                        // SETTINGS
+                        // ======================================================
+                        ListTile(
+                          leading: const Icon(Icons.settings_outlined),
+                          title: const Text('Settings'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsPage(),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const Divider(height: 1),
-                      // ======================================================
-                      // LOGOUT
-                      // ======================================================
-
-                      ListTile(
-                        leading: const Icon(
-                          Icons.logout,
+                            );
+                          },
                         ),
-                        title: const Text('Logout'),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                        ),
-                        onTap: () async {
-                          final shouldLogout = await showDialog<bool>(
-                            context: context,
-                            builder: (dialogContext) {
-                              return AlertDialog(
-                                title: const Text('Logout'),
-                                content: const Text(
-                                  'Are you sure you want to logout?',
+
+                        const Divider(height: 1),
+
+                        // ======================================================
+                        // REFER & EARN
+                        // ======================================================
+                        ListTile(
+                          leading: const Icon(Icons.card_giftcard_outlined),
+                          title: const Text('Refer & Earn'),
+                          subtitle: const Text(
+                            'Invite friends and earn rewards',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => BlocProvider(
+                                  create: (_) =>
+                                      serviceLocator<ReferralBloc>()
+                                        ..add(const ReferralLoadRequested()),
+                                  child: const ReferralPage(),
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(
-                                        dialogContext,
-                                        false,
-                                      );
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(
-                                        dialogContext,
-                                        true,
-                                      );
-                                    },
-                                    child: const Text('Logout'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
+                              ),
+                            );
+                          },
+                        ),
 
-                          if (!context.mounted || shouldLogout != true) {
-                            return;
-                          }
+                        // ======================================================
+                        // FEEDBACK
+                        // ======================================================
+                        ListTile(
+                          leading: const Icon(Icons.feedback_outlined),
+                          title: const Text('Feedback'),
+                          subtitle: const Text(
+                            'Send feedback or contact support',
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => BlocProvider(
+                                  create: (_) =>
+                                      serviceLocator<FeedbackBloc>()
+                                        ..add(const LoadFeedback()),
+                                  child: const FeedbackPage(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
 
-                          context.read<AuthBloc>().add(
-                            const AuthLogOut(),
-                          );
-                        },
-                      ),
-                    ],
+                        const Divider(height: 1),
+
+                        // ======================================================
+                        // LOGOUT
+                        // ======================================================
+                        ListTile(
+                          leading: const Icon(Icons.logout),
+                          title: const Text('Logout'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () async {
+                            final shouldLogout = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogContext) {
+                                return AlertDialog(
+                                  title: const Text('Logout'),
+                                  content: const Text(
+                                    'Are you sure you want to logout?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(dialogContext, false);
+                                      },
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(dialogContext, true);
+                                      },
+                                      child: const Text('Logout'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (!context.mounted || shouldLogout != true) {
+                              return;
+                            }
+
+                            context.read<AuthBloc>().add(const AuthLogOut());
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),                              
-                 const SizedBox(height: 30),
+                  const SizedBox(height: 30),
                 ],
               ),
             );
           }
 
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );
@@ -428,17 +374,12 @@ class _ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
 
-  const _ProfileHeader({
-    required this.name,
-    required this.email,
-  });
+  const _ProfileHeader({required this.name, required this.email});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
@@ -446,9 +387,7 @@ class _ProfileHeader extends StatelessWidget {
             CircleAvatar(
               radius: 34,
               child: Text(
-                name.isNotEmpty
-                    ? name.substring(0, 1).toUpperCase()
-                    : '?',
+                name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?',
                 style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -458,8 +397,7 @@ class _ProfileHeader extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     name,
@@ -473,9 +411,7 @@ class _ProfileHeader extends StatelessWidget {
                     email,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -508,26 +444,17 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 21,
-          color: Theme.of(context)
-              .colorScheme
-              .primary,
-        ),
+        Icon(icon, size: 21, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 3),
@@ -567,21 +494,15 @@ class _GuardianCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // GREEN = CONNECTED
     // RED   = DISCONNECTED
-    final statusColor =
-        connected ? Colors.green : Colors.red;
+    final statusColor = connected ? Colors.green : Colors.red;
 
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           child: Row(
             children: [
               // Guardian icon
@@ -604,8 +525,7 @@ class _GuardianCard extends StatelessWidget {
               // Title + status
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
@@ -618,9 +538,7 @@ class _GuardianCard extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          connected
-                              ? Icons.check_circle
-                              : Icons.cancel,
+                          connected ? Icons.check_circle : Icons.cancel,
                           size: 15,
                           color: statusColor,
                         ),
@@ -641,9 +559,7 @@ class _GuardianCard extends StatelessWidget {
                 ),
               ),
 
-              const Icon(
-                Icons.chevron_right,
-              ),
+              const Icon(Icons.chevron_right),
             ],
           ),
         ),

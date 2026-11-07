@@ -3,67 +3,59 @@ import '../../domain/entities/news.dart';
 class NewsModel extends News {
   const NewsModel({
     required super.id,
+    required super.marketauxUuid,
     required super.title,
-    required super.currency,
-    required super.impactLevel,
-    required super.country,
-    required super.eventDateTime,
-    required super.forecast,
-    required super.previous,
-    required super.actual,
     required super.description,
-    required super.affectedPairs,
-    required super.notification30Min,
-    required super.notification5Min,
-    required super.status,
+    required super.url,
+    required super.source,
+    required super.publishedAt,
+    required super.imageUrl,
+    required super.symbols,
+    required super.currencies,
+    required super.entities,
+    required super.sentiment,
+    required super.sentimentScore,
   });
 
-  factory NewsModel.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory NewsModel.fromJson(Map<String, dynamic> json) {
     return NewsModel(
-      id: json['id'],
-      title: json['title'],
-      currency: json['currency'],
-      impactLevel: json['impact_level'],
-      country: json['country'],
-      eventDateTime: DateTime.parse(
-        json['event_date_time'],
+      id: json['id'] as int,
+      marketauxUuid: json['marketaux_uuid'] as String?,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      url: json['url'] as String? ?? '',
+      source: json['source'] as String?,
+      publishedAt: json['published_at'] != null
+          ? DateTime.tryParse(json['published_at'] as String)
+          : null,
+      imageUrl: json['image_url'] as String?,
+      symbols: List<String>.from(json['symbols'] ?? const []),
+      currencies: List<String>.from(json['currencies'] ?? const []),
+      entities: List<Map<String, dynamic>>.from(
+        (json['entities'] ?? const []).map(
+          (entity) => Map<String, dynamic>.from(entity),
+        ),
       ),
-      forecast: json['forecast'],
-      previous: json['previous'],
-      actual: json['actual'],
-      description: json['description'],
-      affectedPairs: List<String>.from(
-        json['affected_pairs'],
-      ),
-      notification30Min:
-          json['notification_30_min'],
-      notification5Min:
-          json['notification_5_min'],
-      status: json['status'],
+      sentiment: json['sentiment'] as String?,
+      sentimentScore: (json['sentiment_score'] as num?)?.toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'marketaux_uuid': marketauxUuid,
       'title': title,
-      'currency': currency,
-      'impact_level': impactLevel,
-      'country': country,
-      'event_date_time':
-          eventDateTime.toIso8601String(),
-      'forecast': forecast,
-      'previous': previous,
-      'actual': actual,
       'description': description,
-      'affected_pairs': affectedPairs,
-      'notification_30_min':
-          notification30Min,
-      'notification_5_min':
-          notification5Min,
-      'status': status,
+      'url': url,
+      'source': source,
+      'published_at': publishedAt?.toIso8601String(),
+      'image_url': imageUrl,
+      'symbols': symbols,
+      'currencies': currencies,
+      'entities': entities,
+      'sentiment': sentiment,
+      'sentiment_score': sentimentScore,
     };
   }
 }

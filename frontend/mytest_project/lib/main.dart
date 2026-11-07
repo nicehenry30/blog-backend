@@ -18,13 +18,12 @@ import 'package:mytest_project/features/guardian/presentation/bloc/guardian_bloc
 import 'package:mytest_project/features/education/presentation/bloc/education_bloc.dart';
 import 'package:mytest_project/features/news/presentation/bloc/news_bloc.dart';
 import 'package:mytest_project/features/signals/presentation/bloc/trading_signal_bloc.dart';
+import 'package:mytest_project/features/ai_market_analysis/presentation/bloc/ai_market_analysis_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await initDependencies();
 
@@ -39,13 +38,11 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(
-          create: (_) => serviceLocator<AuthBloc>()
-            ..add(const AuthCheckStatus()),
+          create: (_) =>
+              serviceLocator<AuthBloc>()..add(const AuthCheckStatus()),
         ),
 
-        BlocProvider<JournalBloc>(
-          create: (_) => serviceLocator<JournalBloc>(),
-        ),
+        BlocProvider<JournalBloc>(create: (_) => serviceLocator<JournalBloc>()),
 
         BlocProvider<DashboardBloc>(
           create: (_) => serviceLocator<DashboardBloc>(),
@@ -67,12 +64,14 @@ class MyApp extends StatelessWidget {
           create: (_) => serviceLocator<EducationBloc>(),
         ),
 
-        BlocProvider<NewsBloc>(
-          create: (_) => serviceLocator<NewsBloc>(),
-        ),
+        BlocProvider<NewsBloc>(create: (_) => serviceLocator<NewsBloc>()),
 
         BlocProvider<TradingSignalBloc>(
           create: (_) => serviceLocator<TradingSignalBloc>(),
+        ),
+
+        BlocProvider<AiMarketAnalysisBloc>(
+          create: (_) => serviceLocator<AiMarketAnalysisBloc>(),
         ),
       ],
       child: MaterialApp(

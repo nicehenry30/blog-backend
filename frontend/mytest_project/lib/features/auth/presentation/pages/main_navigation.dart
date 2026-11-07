@@ -6,56 +6,40 @@ import 'package:mytest_project/core/di/injection_container.dart';
 import 'package:mytest_project/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:mytest_project/features/signals/presentation/pages/signals_page.dart';
 import 'package:mytest_project/features/market_alerts/presentation/pages/market_alerts_page.dart';
-import 'package:mytest_project/features/education/presentation/pages/education_page.dart';
 import 'package:mytest_project/features/journal/presentation/pages/journal_page.dart';
-import 'package:mytest_project/features/profile/presentation/pages/profile_page.dart';
-import 'package:mytest_project/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:mytest_project/features/journal/presentation/bloc/journal_bloc.dart';
-import 'package:mytest_project/features/subscription/presentation/pages/subscription_page.dart';
+import 'package:mytest_project/features/ai_market_analysis/presentation/pages/ai_market_analysis_page.dart';
+import 'package:mytest_project/features/more/presentation/pages/more_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String name;
   final String email;
 
-  const MainNavigation({
-    super.key,
-    required this.name,
-    required this.email,
-  });
+  const MainNavigation({super.key, required this.name, required this.email});
 
   @override
-  State<MainNavigation> createState() =>
-      _MainNavigationState();
+  State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages = [
-    DashboardPage(
-      name: widget.name,
-      email: widget.email,
-    ),
+    DashboardPage(name: widget.name, email: widget.email),
 
     const SignalsPage(),
 
+    const AiMarketAnalysisPage(),
+
     const MarketAlertsPage(),
 
-    const EducationPage(),
-
     BlocProvider(
-      create: (_) => serviceLocator<JournalBloc>()
-        ..add(const JournalLoadTrades()),
+      create: (_) =>
+          serviceLocator<JournalBloc>()..add(const JournalLoadTrades()),
       child: const JournalPage(),
     ),
 
-    const SubscriptionPage(),
-
-    BlocProvider(
-      create: (_) => serviceLocator<ProfileBloc>()
-        ..add(LoadProfile()),
-      child: const ProfilePage(),
-    ),
+    const MorePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -67,10 +51,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
 
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -90,15 +71,15 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
 
           NavigationDestination(
-            icon: Icon(Icons.warning_amber_outlined),
-            selectedIcon: Icon(Icons.warning_amber),
-            label: 'Alerts',
+            icon: Icon(Icons.psychology_outlined),
+            selectedIcon: Icon(Icons.psychology),
+            label: 'AI',
           ),
 
           NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school),
-            label: 'Education',
+            icon: Icon(Icons.warning_amber_outlined),
+            selectedIcon: Icon(Icons.warning_amber),
+            label: 'Alerts',
           ),
 
           NavigationDestination(
@@ -108,15 +89,9 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
 
           NavigationDestination(
-            icon: Icon(Icons.workspace_premium_outlined),
-            selectedIcon: Icon(Icons.workspace_premium),
-            label: 'Plans',
-          ),
-
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.more_horiz_outlined),
+            selectedIcon: Icon(Icons.more_horiz),
+            label: 'More',
           ),
         ],
       ),

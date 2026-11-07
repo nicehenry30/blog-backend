@@ -1,3 +1,4 @@
+import 'package:mytest_project/core/config/api_config.dart';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -35,7 +36,7 @@ class AutoTradingRemoteDataSourceImpl
   );
 
   static const String baseUrl =
-      'http://127.0.0.1:8000/api';
+      ApiConfig.baseUrl;
 
   // ============================================================
   // HEADERS

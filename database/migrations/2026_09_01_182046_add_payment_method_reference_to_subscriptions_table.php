@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('subscriptions', function (Blueprint $table) {
-            $table->string('payment_method_reference')->nullable();
-        });
+        if (!Schema::hasColumn('subscriptions', 'payment_method_reference')) {
+            Schema::table('subscriptions', function (Blueprint $table) {
+                $table->string('payment_method_reference')->nullable();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropColumn('payment_method_reference');
-        });
+        if (Schema::hasColumn('subscriptions', 'payment_method_reference')) {
+            Schema::table('subscriptions', function (Blueprint $table) {
+                $table->dropColumn('payment_method_reference');
+            });
+        }
     }
 };

@@ -24,3 +24,20 @@ Homestead.yaml
 Thumbs.db
 
 **/.vscode/
+
+# Tradewisser database backups
+*.sql
+*.sql.gz
+*.dump
+*.bak
+
+# Database recovery and temporary backups
+db_recovery_backup/
+blog_backend_before_users_repair.sql
+
+# Flutter temporary repair backups
+frontend/mytest_project/.api-config-repair-backup-*/
+
+# Local environment and secrets
+.env.*
+!.env.example

@@ -81,6 +81,13 @@ return [
             ),
     ],
 
+        'tradewisser_ai' => [
+        'url' => env(
+            'TRADEWISSER_AI_URL',
+            'http://127.0.0.1:8000'
+        ),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | NOWPayments
@@ -135,6 +142,21 @@ return [
             env(
                 'CRYPTO_PAYMENT_WALLET_ADDRESS'
             ),
+    ],
+
+        'marketaux' => [
+        'api_key' => env('MARKETAUX_API_KEY'),
+    ],
+
+    'finance_calendar' => [
+        'api_key' => env('FINANCE_CALENDAR_API_KEY'),
+    ],
+
+        'firebase' => [
+        'credentials' => env(
+            'FIREBASE_CREDENTIALS',
+            storage_path('app/firebase/service-account.json')
+        ),
     ],
 
 ];
