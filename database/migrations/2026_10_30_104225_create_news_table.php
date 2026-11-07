@@ -32,7 +32,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique('url');
+            
             $table->index('published_at');
             $table->index('source');
             $table->index('sentiment');
